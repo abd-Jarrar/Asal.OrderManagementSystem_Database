@@ -33,7 +33,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
         public async Task<List<Order>> GetOrdersCreatedInTheLast30DaysAsync(CancellationToken ct)
         {
-            return await _context.Orders.FromSqlRaw("SELECT * FROM Orders WHERE CreatedAt >= DATEADD(DAY, -30, GETUTCDATE())").ToListAsync(ct);
+            return await _context.Orders.FromSqlRaw("SELECT * FROM Orders WHERE CreatedAt >= DATEADD(DAY, -30, GETUTCDATE())").Include(o => o.OrderItems).ToListAsync(ct);
 
         }
 
