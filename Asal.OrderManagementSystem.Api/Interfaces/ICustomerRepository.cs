@@ -11,6 +11,9 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 
         public Guid? CreateCustomer(string customerName, string customerEmail);
 
-        bool UpdateCustomer(Guid customerId, string? customerName, string? customerEmail);
+        public List<Customer> GetCustomersWithOrders();
+
+        public decimal GetCustomerTotalSales(Guid customerId);
+
     }
 }

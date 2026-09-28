@@ -11,7 +11,7 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
         public bool DeleteProductById(Guid productId);
 
         public Guid? CreateProduct(string productName, string? SKU, decimal productPrice, int? stockQuantity);
+        public List<Product> GetProductWithStock(int stockQuantity);
 
-        public bool UpdateProduct(Guid productId, string? productName, string? SKU, decimal? price, int? stockQuantity, bool? isActive);
     }
 }
