@@ -7,14 +7,8 @@ namespace Asal.OrderManagementSystem.Api.Controllers
 {
     [ApiController]
     [Route("api/customers")]
-    public class CustomerController : ControllerBase
+    public class CustomerController(ICustomerRepository _customerRepository,IOrderRepository _orderRepository) : ControllerBase
     {
-        private readonly ICustomerRepository _customerRepository;
-
-        public CustomerController(ICustomerRepository customerRepository)
-        {
-            _customerRepository = customerRepository;
-        }
         [HttpGet]
         [Route("{customerId:guid}")]
         public async Task<IActionResult> GetCustomerById(Guid customerId,CancellationToken ct)
@@ -48,6 +42,28 @@ namespace Asal.OrderManagementSystem.Api.Controllers
                 return Ok(CustomerResponse.FromModels(customers));
             }
         }
+
+
+        [HttpGet]
+        [Route("total-sales/{customerId:guid}")]
+        [HttpGet]
+        public async Task<IActionResult> GetCusomterSales(Guid customerId,CancellationToken ct)
+        {
+            try
+            {
+                var sales = await _orderRepository.GetCustomerTotalSalesAsync(customerId, ct);
+                return Ok(sales);
+            }
+            catch(Exception ex)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title="there is no customer",
+                    Detail=ex.Message
+                });
+            }
+        }
+
 
         [HttpDelete]
         [Route("{customerId:guid}")]

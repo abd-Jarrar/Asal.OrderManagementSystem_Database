@@ -7,15 +7,10 @@ namespace Asal.OrderManagementSystem.Api.Controllers
 {
     [ApiController]
     [Route("api/products")]
-    public class ProductController : ControllerBase
+    public class ProductController(IProductRepository _productRepository,IOrderRepository _orderRepository) : ControllerBase
     {
 
-        private readonly IProductRepository _productRepository;
-
-        public ProductController(IProductRepository productRepository)
-        {
-            _productRepository = productRepository;
-        }
+        
         [HttpGet]
         [Route("{productId:guid}")]
         public async Task<IActionResult> GetProductById(Guid productId, CancellationToken ct)
@@ -140,6 +135,25 @@ namespace Asal.OrderManagementSystem.Api.Controllers
                 });
             else
                 return Ok(products);
+        }
+
+
+
+        [HttpGet]
+        [Route("top-5-selling")]
+
+        public async Task<IActionResult> GetTop5SellingProducts(CancellationToken ct)
+        {
+
+            var products = await _orderRepository.GetTop5SellingProductsAsync(ct);
+
+            if (products.Count == 0)
+                return NotFound(new ProblemDetails
+                {
+                    Title = "there is no products",
+                    Detail = "there is no products right now "
+                });
+            return Ok(products);
         }
     }
 }

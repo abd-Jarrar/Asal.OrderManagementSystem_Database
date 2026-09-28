@@ -5,12 +5,12 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 {
     public interface IOrderRepository
     {
-        public List<Product> GetTop5SellingProducts();
+        public Task<List<Product>> GetTop5SellingProductsAsync(CancellationToken ct);
 
-        public List<Order> GetOrdersCreatedInTheLast30Days();
+        public Task<List<Order>> GetOrdersCreatedInTheLast30DaysAsync(CancellationToken ct);
 
-        public IEnumerable<MonthlyRevenueDto> GetMonthlyRevenues();
+        public Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenuesAsync(int year, CancellationToken ct);
 
-        public decimal GetCustomerTotalSales(Guid customerId);
+        public Task<decimal> GetCustomerTotalSalesAsync(Guid customerId, CancellationToken ct);
     }
 }
