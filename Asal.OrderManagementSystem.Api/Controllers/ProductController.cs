@@ -47,6 +47,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
 
 
         [HttpGet]
+        [Route("active-products")]
         public async Task<IActionResult> GetAllActiveProducts(CancellationToken ct)
         {
             var products = await _productRepository.GetActiveProducts(ct);
