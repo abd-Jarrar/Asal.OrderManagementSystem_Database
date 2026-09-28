@@ -10,6 +10,11 @@ namespace Asal.OrderManagementSystem.Api.Configuration
         {
             builder.ToTable("Customers");
             builder.HasKey(c => c.Id);
+            builder.Property(c => c.Phone).HasMaxLength(13).IsRequired();
+            builder.HasMany<Order>().WithOne().HasForeignKey(o => o.CustomerId).IsRequired();
+            builder.Property(c => c.Name).HasMaxLength(50).IsRequired();
+            builder.Property(c => c.Email).HasMaxLength(100).IsRequired();
+
         }
     }
 }
