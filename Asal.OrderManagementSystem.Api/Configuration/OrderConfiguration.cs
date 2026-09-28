@@ -8,7 +8,11 @@ namespace Asal.OrderManagementSystem.Api.Configuration
     {
         public void Configure(EntityTypeBuilder<Order> builder)
         {
-            throw new NotImplementedException();
+            builder.ToTable("Orders");
+            builder.HasKey(o => o.Id);
+            builder.Property(o => o.Status).HasConversion<string>().IsRequired();
+            builder.HasMany(o=>o.OrderItems).WithOne().HasForeignKey(oi => oi.OrderId);
+            builder.Ignore(o => o.TotalAmount);
         }
     }
 }

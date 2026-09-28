@@ -9,7 +9,9 @@
         public OrderStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        public decimal TotalAmount { get; set; }
+        public decimal TotalAmount => OrderItems.Sum(oi => oi.UnitPrice * oi.Quantity);
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
 
     }
 }
