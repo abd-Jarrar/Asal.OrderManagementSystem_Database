@@ -1,4 +1,4 @@
-﻿using Asal.OrderManagementSystem.Api.Configuration;
+﻿using Asal.OrderManagementSystem.Api.Data.Configuration;
 using Asal.OrderManagementSystem.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
