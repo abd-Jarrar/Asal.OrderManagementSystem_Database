@@ -11,6 +11,8 @@ namespace Asal.OrderManagementSystem.Api.Responses
         public decimal Price { get; set; }
 
         public int stockQuantity { get; set; }
+
+        public bool IsActive { get; set; }
         private ProductResponse()
         {
 
@@ -24,7 +26,10 @@ namespace Asal.OrderManagementSystem.Api.Responses
                 Name = product.Name,
                 SKU = product.SKU,
                 Price = product.Price,
-                stockQuantity = product.stockQuantity
+                stockQuantity = product.StockQuantity,
+                IsActive=product.IsActive
+
+
             };
             return response;
         }

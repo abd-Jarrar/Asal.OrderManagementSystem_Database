@@ -13,5 +13,7 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
         public Task<Guid?> CreateProductAsync(string productName, string SKU, decimal productPrice, int? stockQuantity, CancellationToken ct);
         public Task<List<Product>> GetProductWithStockAsync(int stockQuantity,CancellationToken ct);
 
+        public Task<List<Product>>GetActiveProducts(CancellationToken ct);
+
     }
 }

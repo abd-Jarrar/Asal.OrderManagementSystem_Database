@@ -53,6 +53,12 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             }
         }
 
+        public async Task<List<Product>> GetActiveProducts(CancellationToken ct)
+        {
+            return await _context.Products.Where(p=>p.IsActive).ToListAsync(ct);
+
+        }
+
         public async Task<List<Product>> GetAllProductsAsync(CancellationToken ct)
         {
             return await _context.Products.ToListAsync(ct);

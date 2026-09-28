@@ -50,6 +50,23 @@ namespace Asal.OrderManagementSystem.Api.Controllers
             }
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllActiveProducts(CancellationToken ct)
+        {
+            var products = await _productRepository.GetActiveProducts(ct);
+            if (products.Count == 0)
+                return NotFound(new ProblemDetails
+                {
+                    Title = "there is no products",
+                    Detail = "there is no active products right now "
+                });
+            else
+            {
+                return Ok(ProductResponse.FromModels(products));
+            }
+        }
+
         [HttpDelete]
         [Route("{productId:guid}")]
         public async Task<IActionResult> DeleteProduct(Guid productId, CancellationToken ct)
