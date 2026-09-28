@@ -8,7 +8,17 @@ namespace Asal.OrderManagementSystem.Api.Configuration
     {
         public void Configure(EntityTypeBuilder<OrderItem> builder)
         {
-            throw new NotImplementedException();
+            builder.ToTable("OrderItems", t =>
+            {
+                t.HasCheckConstraint("CK_OrderItem_Price_MustBePositive", "[UnitPrice]>0");
+                t.HasCheckConstraint("CK_OrderItem_Quantity_MustBePositive", "[Quantity]>0");
+            });
+            builder.HasKey(oi => oi.Id);
+            builder.Property(oi => oi.ProductId).IsRequired();
+            builder.Property(oi => oi.OrderId).IsRequired();
+            
+            
+
         }
     }
 }
