@@ -9,7 +9,7 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 
         public Task<List<Customer>> GetAllCustomersAsync(CancellationToken ct);
 
-        public Task<Guid?> CreateCustomerAsync(string customerName, string customerEmail, CancellationToken ct);
+        public Task<Guid?> CreateCustomerAsync(string customerName, string customerEmail,string phone, CancellationToken ct);
 
         public Task<List<Customer>> GetCustomersWithOrdersAsync(CancellationToken ct);
 

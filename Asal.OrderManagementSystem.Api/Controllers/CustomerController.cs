@@ -72,7 +72,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         {
             try
             {
-                Guid? id= await _customerRepository.CreateCustomerAsync(request.Name,request.Email,ct);
+                Guid? id= await _customerRepository.CreateCustomerAsync(request.Name,request.Email,request.phone,ct);
                 if (id is null)
                     return Conflict(new ProblemDetails()
                     {
@@ -96,7 +96,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
                     Title = ex.Message,
                 });
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
                 return BadRequest(new ProblemDetails()
                 {

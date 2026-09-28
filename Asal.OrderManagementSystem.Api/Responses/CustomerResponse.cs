@@ -6,7 +6,7 @@ namespace Asal.OrderManagementSystem.Api.Responses
     {
         public string Name { get; set; } = null!;
         public string Email { get; set; } = null!;
-
+        public string Phone { get; set;  } = null!;
         private CustomerResponse()
         {
 
@@ -19,6 +19,7 @@ namespace Asal.OrderManagementSystem.Api.Responses
             {
                 Name = customer.Name,
                 Email = customer.Email,
+                Phone = customer.Phone,
 
             };
             return customerResponse;

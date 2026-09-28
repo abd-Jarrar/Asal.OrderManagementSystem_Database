@@ -7,7 +7,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 {
     public class CustomerRepository(AppDbContext _context) : ICustomerRepository
     {
-        public async Task<Guid?> CreateCustomerAsync(string customerName, string customerEmail, CancellationToken ct)
+        public async Task<Guid?> CreateCustomerAsync(string customerName, string customerEmail, string phone,CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(customerName))
                 throw new ArgumentNullException("customer name is empty");
@@ -15,13 +15,20 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             if (string.IsNullOrWhiteSpace(customerEmail))
                 throw new ArgumentNullException("customer email is empty");
 
+            if (string.IsNullOrWhiteSpace(customerEmail))
+                throw new ArgumentNullException("customer phone is empty");
+            if(phone.Length>13)
+                throw new InvalidOperationException("customer phone can't excced 13 characters");
+
             if (await _context.Customers.AnyAsync(c => c.Email == customerEmail, ct))
                 return null;
             var customer = new Customer
             {
                 Name = customerName,
                 Email = customerEmail,
-                Id = Guid.NewGuid()
+                Phone = phone,
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
             };
             await _context.AddAsync(customer,ct);
             await _context.SaveChangesAsync(ct);
