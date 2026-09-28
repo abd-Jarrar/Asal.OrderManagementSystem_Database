@@ -1,4 +1,4 @@
-﻿namespace Asal.OrderManagementSystem.Api.Interfaces
+﻿namespace Asal.OrderManagementSystem.Api.Responses
 {
     public class MonthlyRevenueDto
     {

@@ -17,11 +17,15 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         }
         [HttpGet]
         [Route("{customerId:guid}")]
-        public IActionResult GetCustomerById(Guid customerId)
+        public async Task<IActionResult> GetCustomerById(Guid customerId,CancellationToken ct)
         {
-            var customer = _customerRepository.GetCustomerById(customerId);
+            var customer =  await _customerRepository.GetCustomerByIdAsync(customerId, ct);
             if (customer is null)
-                return NotFound();
+                return NotFound(new ProblemDetails()
+                {
+                    Title="not found",
+                    Detail=$"customer with the id {customerId} was not found"
+                });
             else
             {
                 return Ok(CustomerResponse.FromModel(customer));
@@ -30,11 +34,15 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetCusomters()
+        public async Task<IActionResult> GetCusomters(CancellationToken ct)
         {
-            var customers = _customerRepository.GetAllCustomers();
-            if (customers is null)
-                return NotFound("there are no customers right now ");
+            var customers = await _customerRepository.GetAllCustomersAsync(ct);
+            if (customers.Count==0)
+                return NotFound(new ProblemDetails
+                {
+                    Title="no customers",
+                    Detail="there is no customer right now "
+                });
             else
             {
                 return Ok(CustomerResponse.FromModels(customers));
@@ -43,30 +51,36 @@ namespace Asal.OrderManagementSystem.Api.Controllers
 
         [HttpDelete]
         [Route("{customerId:guid}")]
-        public IActionResult DelteCustomer(Guid customerId)
+        public async Task<IActionResult> DelteCustomer(Guid customerId,CancellationToken ct)
         {
-            var isDeleted = _customerRepository.DeleteCustomerById(customerId);
+            
+            var isDeleted = await _customerRepository.DeleteCustomerByIdAsync(customerId,ct);
             if (isDeleted)
                 return NoContent();
             else
             {
-                return NotFound($"Customer with the id: {customerId} was not found");
+                return NotFound(new ProblemDetails()
+                {
+                    Title= "customer  was not found",
+                    Detail= "Customer with the id: {customerId} was not found"
+                });
             }
         }
 
         [HttpPost]
-        public IActionResult AddCustomer(CreateCustomerRequest request)
+        public async Task<IActionResult> AddCustomer(CreateCustomerRequest request, CancellationToken ct)
         {
             try
             {
-                Guid? id = _customerRepository.CreateCustomer(
-                    request.Name,
-                    request.Email);
-
+                Guid? id= await _customerRepository.CreateCustomerAsync(request.Name,request.Email,ct);
                 if (id is null)
-                    return BadRequest();
+                    return Conflict(new ProblemDetails()
+                    {
+                        Title="duplicated email",
+                        Detail= "two customers can't have the same email"
+                    });
 
-                var customer = _customerRepository.GetCustomerById(id.Value);
+                var customer = await _customerRepository.GetCustomerByIdAsync(id.Value,ct);
 
                 var response = CustomerResponse.FromModel(customer!);
 
@@ -77,34 +91,36 @@ namespace Asal.OrderManagementSystem.Api.Controllers
             }
             catch (ArgumentNullException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new ProblemDetails()
+                {
+                    Title = ex.Message,
+                });
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new ProblemDetails()
+                {
+                    Title = ex.Message,
+                });
 
             }
 
         }
 
-        [HttpPut]
-        [Route("{customerId:guid}")]
-        public IActionResult UpdateCustomer(Guid customerId, UpdateCustomerRequest request)
+        [HttpGet]
+        [Route("with-orders")]
+        public async Task<IActionResult>GetCustomersWithOrders(CancellationToken ct)
         {
-            try
-            {
-                var updateCustomer = _customerRepository.UpdateCustomer(customerId, request.Name, request.Email);
-                if (updateCustomer)
-                    return NoContent();
-                else
+            var customers=await _customerRepository.GetCustomersWithOrdersAsync(ct);
+            if (customers.Count == 0)
+                return NotFound(new ProblemDetails()
                 {
-                    return NotFound();
-                }
-            }
-            catch (InvalidOperationException ex)
+                    Title = "no customers",
+                    Detail = "there is no customesr with orders right now "
+                });
+            else
             {
-
-                return BadRequest(ex.Message);
+                return Ok(customers);
             }
         }
     }

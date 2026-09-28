@@ -11,6 +11,6 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 
         public IEnumerable<MonthlyRevenueDto> GetMonthlyRevenues();
 
-
+        public decimal GetCustomerTotalSales(Guid customerId);
     }
 }
