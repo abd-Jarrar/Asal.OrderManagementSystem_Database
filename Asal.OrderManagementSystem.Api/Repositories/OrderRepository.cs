@@ -8,6 +8,13 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 {
     public class OrderRepository(AppDbContext _context) : IOrderRepository
     {
+
+        public async Task<List<Order>> GetAllOrdersAsync(CancellationToken ct)
+        {
+           
+            return await _context.Orders.ToListAsync(ct);
+        }
+
         public async Task<decimal> GetCustomerTotalSalesAsync(Guid customerId,CancellationToken ct)
         {
             var customer= await _context.Customers.FirstOrDefaultAsync(x => x.Id == customerId,ct);
@@ -29,6 +36,11 @@ namespace Asal.OrderManagementSystem.Api.Repositories
         new DateTime(year, g.Key, 1),
         g.Sum(o => o.TotalAmount))
     );
+        }
+
+        public async Task<Order?> GetOrderByIdAsync(Guid orderId, CancellationToken ct)
+        {
+            return await _context.Orders.FirstOrDefaultAsync(o=>o.Id== orderId,ct);
         }
 
         public async Task<List<Order>> GetOrdersCreatedInTheLast30DaysAsync(CancellationToken ct)

@@ -12,5 +12,12 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
         public Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenuesAsync(int year, CancellationToken ct);
 
         public Task<decimal> GetCustomerTotalSalesAsync(Guid customerId, CancellationToken ct);
+
+        public Task<Order?> GetOrderByIdAsync(Guid orderId,CancellationToken ct);
+
+        public Task<List<Order>>GetAllOrdersAsync( CancellationToken ct);
+
+        
+
     }
 }

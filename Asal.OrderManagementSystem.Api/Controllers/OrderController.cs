@@ -42,5 +42,32 @@ namespace Asal.OrderManagementSystem.Api.Controllers
             return Ok(revenues);
         }
 
+        [HttpGet]
+        [Route("{orderId:guid}")]
+        public async Task<IActionResult> GetOrderById(Guid orderId,CancellationToken ct)
+        {
+            var order=await _orderRepository.GetOrderByIdAsync(orderId, ct);
+            if (order is null)
+                return NotFound(new ProblemDetails
+                {
+                    Title = "no order was found",
+                    Detail = $"order with the id {orderId} was not found"
+                });
+            return Ok(OrderResponse.FromModel(order));
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> GetOrders(CancellationToken ct)
+        {
+            var orders=await _orderRepository.GetAllOrdersAsync(ct);
+            if (orders.Count() == 0)
+                return NotFound(new ProblemDetails
+                {
+                    Title="no orders found",
+                    Detail="there is no orders right now"
+                });
+            return Ok(OrderResponse.FromModels(orders));
+        }
     }
 }
