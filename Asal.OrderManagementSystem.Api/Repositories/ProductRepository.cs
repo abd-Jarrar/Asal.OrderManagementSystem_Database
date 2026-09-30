@@ -9,19 +9,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
     {
         public async Task<Guid?> CreateProductAsync(string productName, string SKU, decimal productPrice, int? stockQuantity,CancellationToken ct)
         {
-            if(string.IsNullOrWhiteSpace(productName))
-                throw new ArgumentNullException("productName is null");
-
-            if (string.IsNullOrWhiteSpace(SKU))
-                throw new ArgumentNullException("productName is null");
-
-            if (productPrice <= 0)
-                throw new InvalidOperationException("productPrice is negative");
-            if(stockQuantity is not null)
-            {
-                if(stockQuantity<0)
-                    throw new InvalidOperationException("stockQuantity is negative");
-            }
             if (await _context.Products.AnyAsync(p => p.SKU == SKU,ct))
                 return null;
 

@@ -1,9 +1,14 @@
 using Asal.OrderManagementSystem.Api.Data;
 using Asal.OrderManagementSystem.Api.Interfaces;
 using Asal.OrderManagementSystem.Api.Repositories;
+using Asal.OrderManagementSystem.Api.Validators;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 builder.Services.AddScoped<IProductRepository,ProductRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();

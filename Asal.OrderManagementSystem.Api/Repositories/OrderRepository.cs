@@ -121,9 +121,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 throw new InvalidOperationException(
                     "Items can only be added to pending orders.");
 
-            if (request.Quantity<= 0)
-                throw new InvalidOperationException($"quantity must be more than zero");
-
             var product=await _context.Products.FirstOrDefaultAsync(p=>p.Id==request.ProductId,ct);
 
             if (product is null)
@@ -157,10 +154,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 if (customer is null)
                     throw new KeyNotFoundException($"Customer with the id {request.CustomerId} was not found.");
 
-                
-                if (request.Items is null || request.Items.Count == 0)
-                    throw new InvalidOperationException("An order must contain at least one product.");
-
                 var order = new Order
                 {
                     Id = Guid.NewGuid(),
@@ -171,9 +164,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
                 foreach (var item in request.Items)
                 {
-                    if (item.Quantity <= 0)
-                        throw new InvalidOperationException("Product quantity must be greater than zero.");
-
                     var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == item.ProductId, ct);
 
                     if (product is null)
