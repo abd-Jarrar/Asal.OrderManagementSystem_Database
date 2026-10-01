@@ -10,7 +10,7 @@ using static System.Net.WebRequestMethods;
 
 namespace Asal.OrderManagementSystem.Api.Repositories
 {
-    public class OrderRepository(AppDbContext _context) : IOrderRepository
+    public class OrderRepository(AppDbContext _context,ILogger<OrderRepository> _logger) : IOrderRepository
     {
         public async Task<bool> CancelOrderAsync(Guid orderId, CancellationToken ct)
         {
@@ -30,6 +30,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             }
             order.Status = OrderStatus.Cancelled;
             await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("the order with id: {OrderId} was cancelled", orderId);
             return true;
         }
 
@@ -129,7 +130,11 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 throw new InvalidOperationException(
                     "Cannot add an inactive product to an order.");
             if (product.StockQuantity < request.Quantity)
+            {
+                _logger.LogWarning("There is no enough stock for product {product.Id}", product.Id);
+
                 throw new InvalidOperationException($"there's no enough quantity in the stock");
+            }
 
             product.StockQuantity-= request.Quantity;
             var orderItem = new OrderItem
@@ -172,8 +177,12 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                     if (!product.IsActive)
                         throw new InvalidOperationException($"Product with the id {item.ProductId} is inactive.");
 
-                    if (item.Quantity > product.StockQuantity)
-                        throw new InvalidOperationException($"There is not enough stock for product {product.Id}.");
+                if (item.Quantity > product.StockQuantity)
+                {
+                    _logger.LogWarning("There is no enough stock for product {product.Id}", product.Id);
+                    throw new InvalidOperationException($"There is no enough stock for product {product.Id}.");
+                    
+                }
                     
                     product.StockQuantity -= item.Quantity;
                     var orderItem = new OrderItem
@@ -190,6 +199,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("order with the id: {OrderId} was created", order.Id);
                 await transaction.CommitAsync(ct);
                 return order.Id;
             
