@@ -1,4 +1,5 @@
 using Asal.OrderManagementSystem.Api.Data;
+using Asal.OrderManagementSystem.Api.Exceptions;
 using Asal.OrderManagementSystem.Api.Interfaces;
 using Asal.OrderManagementSystem.Api.Repositories;
 using Asal.OrderManagementSystem.Api.Validators;
@@ -19,7 +20,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 var app = builder.Build();
+app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

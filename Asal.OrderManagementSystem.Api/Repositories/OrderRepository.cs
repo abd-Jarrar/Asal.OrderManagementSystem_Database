@@ -15,8 +15,8 @@ namespace Asal.OrderManagementSystem.Api.Repositories
         public async Task<bool> CancelOrderAsync(Guid orderId, CancellationToken ct)
         {
             var order = await GetOrderByIdAsync(orderId, ct);
-            if(order is null)
-                throw new ArgumentNullException($"order with the id {orderId} was not found ");
+            if (order is null)
+                return false;
             if (order.Status == OrderStatus.Cancelled)
                 throw new InvalidOperationException("you can't cancel a cancelled order");
             if (order.Status == OrderStatus.Completed)
@@ -57,11 +57,11 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             return await _context.Orders.Include(o=>o.OrderItems).ToListAsync(ct);
         }
 
-        public async Task<decimal> GetCustomerTotalSalesAsync(Guid customerId,CancellationToken ct)
+        public async Task<decimal?> GetCustomerTotalSalesAsync(Guid customerId,CancellationToken ct)
         {
             var customer= await _context.Customers.FirstOrDefaultAsync(x => x.Id == customerId,ct);
-            if(customer is null)
-                throw new ArgumentNullException($"there is no customer with the id {customerId}");
+            if (customer is null)
+                return null;
 
             var orders = await _context.Orders.FromSqlInterpolated($"select * from Orders where CustomerId={customerId} ").ToListAsync(ct);
             return orders.Sum(o => o.TotalAmount);

@@ -166,45 +166,33 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> AddProduct(CreateProductRequest request,CancellationToken ct)
         {
-            try
-            {
-                Guid? id = await _productRepository.CreateProductAsync(request.Name
-                    , request.SKU, request.Price, request.stockQuantity,ct);
+            Guid? id = await _productRepository.CreateProductAsync(
+                request.Name,
+                request.SKU,
+                request.Price,
+                request.stockQuantity,
+                ct);
 
-                if (id is null)
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title="duplicated sku",
-                        Detail="two products can't have the same sku"
-                    });
-
-                var product = await _productRepository.GetProductByIdAsync(id.Value,ct);
-
-                var response = ProductResponse.FromModel(product!);
-
-                return CreatedAtAction(
-                    nameof(GetProductById),
-                    new { productId = product?.Id },
-                    response);
-            }
-            catch (ArgumentNullException ex)
+            if (id is null)
             {
                 return BadRequest(new ProblemDetails
                 {
-                    Title = ex.Message,
+                    Title = "Duplicated SKU",
+                    Detail = "Two products can't have the same SKU."
                 });
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = ex.Message,
-                });
 
-            }
+            var product = await _productRepository.GetProductByIdAsync(
+                id.Value,
+                ct);
 
+            var response = ProductResponse.FromModel(product!);
+
+            return CreatedAtAction(
+                nameof(GetProductById),
+                new { productId = product?.Id },
+                response);
         }
-
         [HttpGet]
         [Route("stock-belowOrEqual-5")]
         public async Task<IActionResult> GetProductsWithStockBelow5(CancellationToken ct)
