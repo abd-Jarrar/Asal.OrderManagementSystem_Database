@@ -8,7 +8,7 @@ namespace Asal.OrderManagementSystem.Api.Validators
         public CreateOrderRequestValidator()
         {
             RuleFor(x => x.Items).NotEmpty().WithMessage("the Order must contain at least one item");
-
+            RuleForEach(r => r.Items).SetValidator(new CreateOrderItemRequestValidator());
         }
     }
 }
