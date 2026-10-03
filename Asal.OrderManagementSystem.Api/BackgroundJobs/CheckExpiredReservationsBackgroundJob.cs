@@ -26,7 +26,7 @@ namespace Asal.OrderManagementSystem.Api.BackgroundJobs
 
                     var expiredReservations =
                         await reservationRepository
-                            .GetExpiredReservationsAsync(stoppingToken);
+                            .GetReservationsPendingExpirationAsync(stoppingToken);
 
                     if (expiredReservations.Count > 0)
                     {

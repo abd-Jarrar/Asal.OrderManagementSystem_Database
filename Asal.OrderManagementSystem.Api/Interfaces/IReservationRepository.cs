@@ -16,6 +16,8 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 
         public Task<List<Reservation>> GetAllReservations(CancellationToken ct);
 
-        public Task<bool> ConvertReservationToOrder(Guid reservationId, CancellationToken ct);
+        public Task<Guid> ConvertReservationToOrder(Guid reservationId, CancellationToken ct);
+
+        public Task<List<Reservation>> GetReservationsPendingExpirationAsync(CancellationToken ct);
     }
 }

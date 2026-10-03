@@ -17,9 +17,10 @@ namespace Asal.OrderManagementSystem.Api.Responses
         }
         public static ReservationResponse FromModel(Reservation reservation)
         {
-            var expiresAt = reservation.CreatedAt.AddMinutes(ReservationExpirationMinutes);
-
-            var remaining = expiresAt - DateTime.UtcNow;
+            var timeToExpire = 
+                reservation.Status == ReservationStatus.Active
+        ? GetRemainingTime(reservation.CreatedAt)
+        : reservation.Status.ToString();
 
             return new ReservationResponse
             {
@@ -27,13 +28,23 @@ namespace Asal.OrderManagementSystem.Api.Responses
                 CustomerId = reservation.CustomerId,
                 Status = reservation.Status,
                 CreatedAt = reservation.CreatedAt,
-                TimeToExpire = remaining.TotalMinutes > 0? $"{Math.Ceiling(remaining.TotalMinutes)} min": "Expired"
+                TimeToExpire = timeToExpire
             };
         }
 
         public static List<ReservationResponse> FromModels(List<Reservation> reservations)
         {
             return reservations.Select(r => ReservationResponse.FromModel(r)).ToList();
+        }
+
+        private static string GetRemainingTime(DateTime createdAt)
+        {
+            var expiresAt = createdAt.AddMinutes(ReservationExpirationMinutes);
+            var remaining = expiresAt - DateTime.UtcNow;
+
+            return remaining.TotalMinutes > 0
+                ? $"{Math.Ceiling(remaining.TotalMinutes)} min"
+                : "Expired";
         }
     }
 }

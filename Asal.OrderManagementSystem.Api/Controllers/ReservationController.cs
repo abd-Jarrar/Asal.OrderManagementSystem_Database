@@ -1,4 +1,5 @@
 ﻿using Asal.OrderManagementSystem.Api.Interfaces;
+using Asal.OrderManagementSystem.Api.Models;
 using Asal.OrderManagementSystem.Api.Repositories;
 using Asal.OrderManagementSystem.Api.Requests.OrderRequests;
 using Asal.OrderManagementSystem.Api.Requests.ReservationItemRequests;
@@ -48,7 +49,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
                 return NotFound(new ProblemDetails
                 {
                     Title = "no reservations found",
-                    Detail = "there is no reservations right now"
+                    Detail = "there is no expired reservations right now"
                 });
             return Ok(ReservationResponse.FromModels(reservations));
         }
@@ -66,7 +67,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
 
         [HttpPost]
         [Route("cancel/{reservationId:guid}")]
-        public async Task<IActionResult> CancelOrder(Guid reservationId, CancellationToken ct)
+        public async Task<IActionResult> CancelReservation(Guid reservationId, CancellationToken ct)
         {
             bool isDeleted = await _reservationRepository.CancelReservationAsync(reservationId, ct);
             if (isDeleted)
@@ -76,7 +77,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
                 return NotFound(new ProblemDetails
                 {
                     Title = "cancelling failed",
-                    Detail = "order with the id {reservationId} was not found"
+                    Detail = "reservation with the id {reservationId} was not found"
                 });
             }
 
@@ -87,18 +88,11 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [Route("convert/{reservationId:guid}")]
         public async Task<IActionResult> ConvertReservationToOrder(Guid reservationId,CancellationToken ct)
         {
-            var converted = await _reservationRepository.ConvertReservationToOrder(reservationId, ct);
+            var orderId = await _reservationRepository.ConvertReservationToOrder(reservationId, ct);
 
-            if (!converted)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Title = "Reservation not found",
-                    Detail = $"Reservation with the id {reservationId} was not found."
-                });
-            }
-
-            return NoContent();
+            return Created(
+                $"/api/orders/{orderId}",
+                new { orderId });
         }
     }
 }

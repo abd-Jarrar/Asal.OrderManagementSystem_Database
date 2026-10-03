@@ -13,6 +13,55 @@ namespace Asal.OrderManagementSystem.Api.Controllers
     [Route("api/orders")]
     public class OrderController(IOrderRepository _orderRepository) : ControllerBase
     {
+
+        [HttpGet]
+        [Route("{orderId:guid}")]
+        public async Task<IActionResult> GetOrderById(Guid orderId, CancellationToken ct)
+        {
+            var order = await _orderRepository.GetOrderByIdAsync(orderId, ct);
+            if (order is null)
+                return NotFound(new ProblemDetails
+                {
+                    Title = "no order was found",
+                    Detail = $"order with the id {orderId} was not found"
+                });
+            return Ok(OrderResponse.FromModel(order));
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> GetOrders(CancellationToken ct)
+        {
+            var orders = await _orderRepository.GetAllOrdersAsync(ct);
+            if (orders.Count() == 0)
+                return NotFound(new ProblemDetails
+                {
+                    Title = "no orders found",
+                    Detail = "there is no orders right now"
+                });
+            return Ok(OrderResponse.FromModels(orders));
+        }
+
+
+        [HttpPost]
+        [Route("cancel/{orderId:guid}")]
+        public async Task<IActionResult> CancelOrder(Guid orderId, CancellationToken ct)
+        {
+
+            bool isDeleted = await _orderRepository.CancelOrderAsync(orderId, ct);
+            if (isDeleted)
+                return NoContent();
+            else
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "cancelling failed",
+                    Detail = "order with the id {orderId} was not found"
+                });
+            }
+
+        }
+
         [HttpGet]
         [Route("last-30-days-orders")]
         public async Task<IActionResult> GetLast30DaysOrders(CancellationToken ct)
@@ -46,52 +95,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
             return Ok(revenues);
         }
 
-        [HttpGet]
-        [Route("{orderId:guid}")]
-        public async Task<IActionResult> GetOrderById(Guid orderId,CancellationToken ct)
-        {
-            var order=await _orderRepository.GetOrderByIdAsync(orderId, ct);
-            if (order is null)
-                return NotFound(new ProblemDetails
-                {
-                    Title = "no order was found",
-                    Detail = $"order with the id {orderId} was not found"
-                });
-            return Ok(OrderResponse.FromModel(order));
-        }
 
-
-        [HttpGet]
-        public async Task<IActionResult> GetOrders(CancellationToken ct)
-        {
-            var orders=await _orderRepository.GetAllOrdersAsync(ct);
-            if (orders.Count() == 0)
-                return NotFound(new ProblemDetails
-                {
-                    Title="no orders found",
-                    Detail="there is no orders right now"
-                });
-            return Ok(OrderResponse.FromModels(orders));
-        }
-
-        [HttpPost]
-        [Route("cancel/{orderId:guid}")]
-        public async Task<IActionResult> CancelOrder(Guid orderId, CancellationToken ct)
-        {
-
-            bool isDeleted = await _orderRepository.CancelOrderAsync(orderId, ct);
-            if (isDeleted)
-                return NoContent();
-            else
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Title = "cancelling failed",
-                    Detail = "order with the id {orderId} was not found"
-                });
-            }
-
-        }
 
         [HttpDelete]
         [Route("{orderId:guid}/items/{itemId:guid}")]

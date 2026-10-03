@@ -4,6 +4,7 @@ using Asal.OrderManagementSystem.Api.Models;
 using Asal.OrderManagementSystem.Api.Requests.OrderItemRequests;
 using Asal.OrderManagementSystem.Api.Requests.OrderRequests;
 using Asal.OrderManagementSystem.Api.Requests.ReservationRequests;
+using Azure.Core;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,10 +21,8 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             var reservation = await GetReservationByIdAsync(reservationId, ct);
             if (reservation is null)
                 return false;
-            if (reservation.Status == ReservationStatus.Cancelled)
-                throw new InvalidOperationException("you can't cancel a cancelled reservation");
-            if (reservation.Status == ReservationStatus.Converted)
-                throw new InvalidOperationException("you can't cancel a converted reservation");
+            if (reservation.Status != ReservationStatus.Active)
+                throw new InvalidOperationException("you can only cancel Active reservation");
             foreach (var reservationOrderItem in reservation.Items)
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == reservationOrderItem.ProductId, ct);
@@ -38,7 +37,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
         }
 
-        public async Task<bool> ConvertReservationToOrder(Guid reservationId,CancellationToken ct)
+        public async Task<Guid> ConvertReservationToOrder(Guid reservationId,CancellationToken ct)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync(ct);
@@ -46,7 +45,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             var reservation = await GetReservationByIdAsync(reservationId, ct);
 
             if (reservation is null)
-                return false;
+                throw new KeyNotFoundException($"reservation with the id {reservationId} was not found.");
 
             if (reservation.Status != ReservationStatus.Active)
                 throw new InvalidOperationException("You can only convert an active reservation.");
@@ -90,7 +89,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             await _context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
-            return true;
+            return order.Id;
         }
         public async Task<Guid> CreateReservationAsync(CreateReservationRequest request, CancellationToken ct)
         {
@@ -154,20 +153,30 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             return await _context.Reservations.Include(r =>r.Items).FirstOrDefaultAsync(r => r.Id == reservationId, ct);
         }
 
-        public async Task<List<Reservation>> GetExpiredReservationsAsync(CancellationToken ct)
-        {
-            return await _context.Reservations.Include(r=>r.Items).Where(r => (DateTime.UtcNow >= r.ExpiresAt)&&(r.Status==ReservationStatus.Active)).ToListAsync(ct);
-        }
+        
 
         public async Task<List<Reservation>> GetAllReservations(CancellationToken ct)
         {
             return await _context.Reservations.Include(r => r.Items).ToListAsync(ct);
+        }
+
+        public async Task<List<Reservation>> GetReservationsPendingExpirationAsync(CancellationToken ct)
+        {
+            return await _context.Reservations.Include(r => r.Items).
+                Where(r => (DateTime.UtcNow >= r.ExpiresAt)&&(r.Status==ReservationStatus.Active))
+                .ToListAsync(ct);
+        }
+
+        public async Task<List<Reservation>> GetExpiredReservationsAsync(CancellationToken ct)
+        {
+            return await _context.Reservations.Include(r => r.Items).Where(r=>r.Status==ReservationStatus.Expired).ToListAsync(ct);
         }
         public async Task RemoveReservationsItemsAsync(List<Reservation> expiredReservatoins, CancellationToken ct)
         {
 
             foreach (var reservation in expiredReservatoins)
             {
+                
                 foreach (var item in reservation.Items)
                 {
                     var product = await _context.Products
@@ -182,5 +191,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
             await _context.SaveChangesAsync(ct);
         }
+    
+    
     }
 }
