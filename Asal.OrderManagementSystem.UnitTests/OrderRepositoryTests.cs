@@ -20,10 +20,7 @@ public class OrderRepositoryTests : IDisposable
 
     Guid ValidProductId =Guid.Parse("00000000-0000-0000-0000-000000000000");
     Guid ValidProductId2 = Guid.Parse("55555555-5555-5555-5555-555555555555");
-    Guid InvalidCustomerId = Guid.Parse("99999999-9999-9999-9999-999999999999");
-    Guid InValidProductId = Guid.Parse("99999999-9999-9999-9999-999999999999");
 
-    Guid InvalidOrderId = Guid.Parse("00000000-0000-0000-0000-000000000000");
 
     Guid validOrderId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
@@ -127,9 +124,10 @@ public class OrderRepositoryTests : IDisposable
     public async Task CreateOrder_WithInvalidCustomer_ThrowsKeyNotFoundException()
     {
         // Arrange
+        var newId = Guid.NewGuid();
         var createOrderRequest = new CreateOrderRequest
         {
-            CustomerId = InvalidCustomerId,
+            CustomerId = newId,
             Items = new List<CreateOrderItemRequest>
         {
             new CreateOrderItemRequest
@@ -145,7 +143,7 @@ public class OrderRepositoryTests : IDisposable
             () => _orderRepository.CreateOrderAsync(createOrderRequest, ct));
 
         Assert.Contains("Customer", exception.Message);
-        Assert.Contains(InvalidCustomerId.ToString(), exception.Message);
+        Assert.Contains(newId.ToString(), exception.Message);
     }
 
 
@@ -154,6 +152,7 @@ public class OrderRepositoryTests : IDisposable
     public async Task CreateOrder_WithInvalidProduct_ThrowsKeyNotFoundException()
     {
         // Arrange
+        var productId = Guid.NewGuid();
         var createOrderRequest = new CreateOrderRequest
         {
             CustomerId = activeCustomerId,
@@ -161,7 +160,7 @@ public class OrderRepositoryTests : IDisposable
         {
             new CreateOrderItemRequest
             {
-                ProductId = InValidProductId,
+                ProductId = productId,
                 Quantity = 1
             }
         }
@@ -172,7 +171,7 @@ public class OrderRepositoryTests : IDisposable
             () => _orderRepository.CreateOrderAsync(createOrderRequest, ct));
 
         Assert.Contains("Product", exception.Message);
-        Assert.Contains(InValidProductId.ToString(), exception.Message);
+        Assert.Contains(productId.ToString(), exception.Message);
     }
 
 
@@ -318,9 +317,10 @@ public class OrderRepositoryTests : IDisposable
     [Fact]
     public async Task RemoveItem_InvalidOrderId_ThrowsKeyNotFoundException()
     {
+        var orderId = Guid.NewGuid();
         //Act & Assert
         var excepion = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-        _orderRepository.RemoveItemAsync(InvalidOrderId, ValidProductId, ct));
+        _orderRepository.RemoveItemAsync(orderId, ValidProductId, ct));
 
         Assert.Contains("not found", excepion.Message);
 
