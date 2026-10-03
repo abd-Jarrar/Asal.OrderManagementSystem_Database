@@ -3,7 +3,7 @@
     public enum ReservationStatus
     {
         Active,
-        Completed,
+        Converted,
         Cancelled,
         Expired
     }
