@@ -5,11 +5,14 @@ using Asal.OrderManagementSystem.Api.Requests.ReservationRequests;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Asal.OrderManagementSystem.Api.Repositories
 {
     public class ReservationRepository(AppDbContext _context,ILogger<ReservationRepository> _logger) : IReservationRepository
     {
+        private const int ReservationExpirationMinutes = 15;
+
         public async Task<bool> CancelReservationAsync(Guid reservationId, CancellationToken ct)
         {
             var reservation = await GetReservationByIdAsync(reservationId, ct);
@@ -49,7 +52,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 CustomerId = request.CustomerId,
                 Status = ReservationStatus.Active,
                 CreatedAt= now,
-                ExpiresAt= now.AddMinutes(15),
+                ExpiresAt= now.AddMinutes(ReservationExpirationMinutes),
                 Items = new List<ReservationItem>()
             };
 
@@ -90,11 +93,35 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             return reservation.Id;
         }
 
-        
 
         public async Task<Reservation?> GetReservationByIdAsync(Guid reservationId, CancellationToken ct)
         {
             return await _context.Reservations.Include(r =>r.Items).FirstOrDefaultAsync(r => r.Id == reservationId, ct);
+        }
+
+        public async Task<List<Reservation>> GetExpiredReservationsAsync(CancellationToken ct)
+        {
+            return await _context.Reservations.Include(r=>r.Items).Where(r => (DateTime.UtcNow >= r.ExpiresAt)&&r.Status==ReservationStatus.Active).ToListAsync(ct);
+        }
+
+        public async Task RemoveReservationsItemsAsync(List<Reservation> expiredReservatoins, CancellationToken ct)
+        {
+
+            foreach (var reservation in expiredReservatoins)
+            {
+                foreach (var item in reservation.Items)
+                {
+                    var product = await _context.Products
+                        .FirstAsync(p => p.Id == item.ProductId, ct);
+
+                    product.StockQuantity += item.Quantity;
+                }
+
+                _context.ReservationItems.RemoveRange(reservation.Items);
+                reservation.Status = ReservationStatus.Expired;
+            }
+
+            await _context.SaveChangesAsync(ct);
         }
     }
 }
