@@ -32,3 +32,4 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 
 app.Run();
+public partial class Program { }

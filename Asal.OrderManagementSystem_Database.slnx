@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="Asal.OrderManagementSystem.Api/Asal.OrderManagementSystem.Api.csproj" />
+  <Project Path="Asal.OrderManagementSystem.IntegrationTests/Asal.OrderManagementSystem.IntegrationTests.csproj" />
   <Project Path="Asal.OrderManagementSystem.UnitTests/Asal.OrderManagementSystem.UnitTests.csproj" />
 </Solution>
