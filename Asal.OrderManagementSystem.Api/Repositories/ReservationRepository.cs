@@ -21,7 +21,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             var reservation = await GetReservationByIdAsync(reservationId, ct);
             if (reservation is null)
                 return false;
-            if (reservation.Status != ReservationStatus.Active)
+            if (reservation.Status != ReservationStatus.Active||(DateTime.UtcNow>=reservation.ExpiresAt))
                 throw new InvalidOperationException("you can only cancel Active reservation");
             foreach (var reservationOrderItem in reservation.Items)
             {
@@ -47,7 +47,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             if (reservation is null)
                 throw new KeyNotFoundException($"reservation with the id {reservationId} was not found.");
 
-            if (reservation.Status != ReservationStatus.Active)
+            if (reservation.Status != ReservationStatus.Active || (DateTime.UtcNow >= reservation.ExpiresAt))
                 throw new InvalidOperationException("You can only convert an active reservation.");
 
             var order = new Order
