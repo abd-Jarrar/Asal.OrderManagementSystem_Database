@@ -4,13 +4,15 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 {
     public interface ICustomerRepository
     {
-        public Customer? GetCustomerById(Guid customerId);
-        public bool DeleteCustomerById(Guid customerId);
+        public Task<Customer?> GetCustomerByIdAsync(Guid customerId,CancellationToken ct);
+        public Task<bool> DeleteCustomerByIdAsync(Guid customerId,CancellationToken ct);
 
-        public List<Customer> GetAllCustomers();
+        public Task<List<Customer>> GetAllCustomersAsync(CancellationToken ct);
 
-        public Guid? CreateCustomer(string customerName, string customerEmail);
+        public Task<Guid?> CreateCustomerAsync(string customerName, string customerEmail,string phone, CancellationToken ct);
 
-        bool UpdateCustomer(Guid customerId, string? customerName, string? customerEmail);
+        public Task<List<Customer>> GetCustomersWithOrdersAsync(CancellationToken ct);
+
+
     }
 }

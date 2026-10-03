@@ -4,14 +4,16 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 {
     public interface IProductRepository
     {
-        public Product? GetProductById(Guid productId);
+        public Task<Product?> GetProductByIdAsync(Guid productId,CancellationToken ct);
 
-        public List<Product> GetAllProducts();
+        public Task<List<Product>> GetAllProductsAsync(CancellationToken ct);
 
-        public bool DeleteProductById(Guid productId);
+        public Task<bool> DeleteProductByIdAsync(Guid productId, CancellationToken ct);
 
-        public Guid? CreateProduct(string productName, string? SKU, decimal productPrice, int? stockQuantity);
+        public Task<Guid?> CreateProductAsync(string productName, string SKU, decimal productPrice, int? stockQuantity, CancellationToken ct);
+        public Task<List<Product>> GetProductWithStockAsync(int stockQuantity,CancellationToken ct);
 
-        public bool UpdateProduct(Guid productId, string? productName, string? SKU, decimal? price, int? stockQuantity, bool? isActive);
+        public Task<List<Product>>GetActiveProducts(CancellationToken ct);
+
     }
 }
