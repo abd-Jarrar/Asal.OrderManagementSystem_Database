@@ -11,6 +11,7 @@ namespace Asal.OrderManagementSystem.Api.Data.Configuration
             builder.ToTable("Reservations");
             builder.HasKey(r => r.Id);
             builder.Property(o => o.Status).HasConversion<string>().IsRequired();
+            builder.Ignore(r => r.IsExpired);
             builder.Property(r => r.CustomerId).IsRequired();
             builder.Property(r => r.CreatedAt).IsRequired();
             builder.Property(r => r.ExpiresAt).IsRequired();

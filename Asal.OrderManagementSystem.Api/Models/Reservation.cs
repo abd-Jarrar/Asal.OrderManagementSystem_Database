@@ -5,6 +5,7 @@
         public Guid Id { get; set; }
         public Guid CustomerId { get; set; }
 
+        public bool IsExpired =>DateTime.UtcNow >= ExpiresAt;
         public Customer Customer { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
 
