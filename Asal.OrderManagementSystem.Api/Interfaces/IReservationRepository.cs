@@ -1,4 +1,5 @@
 ﻿using Asal.OrderManagementSystem.Api.Models;
+using Asal.OrderManagementSystem.Api.Requests.ReservationRequests;
 
 namespace Asal.OrderManagementSystem.Api.Interfaces
 {
