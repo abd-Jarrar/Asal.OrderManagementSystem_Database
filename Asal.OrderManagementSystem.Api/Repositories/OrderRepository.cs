@@ -10,13 +10,13 @@ using static System.Net.WebRequestMethods;
 
 namespace Asal.OrderManagementSystem.Api.Repositories
 {
-    public class OrderRepository(AppDbContext _context) : IOrderRepository
+    public class OrderRepository(AppDbContext _context,ILogger<OrderRepository> _logger) : IOrderRepository
     {
         public async Task<bool> CancelOrderAsync(Guid orderId, CancellationToken ct)
         {
             var order = await GetOrderByIdAsync(orderId, ct);
-            if(order is null)
-                throw new ArgumentNullException($"order with the id {orderId} was not found ");
+            if (order is null)
+                return false;
             if (order.Status == OrderStatus.Cancelled)
                 throw new InvalidOperationException("you can't cancel a cancelled order");
             if (order.Status == OrderStatus.Completed)
@@ -30,6 +30,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             }
             order.Status = OrderStatus.Cancelled;
             await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("the order with id: {OrderId} was cancelled", orderId);
             return true;
         }
 
@@ -56,11 +57,11 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             return await _context.Orders.Include(o=>o.OrderItems).ToListAsync(ct);
         }
 
-        public async Task<decimal> GetCustomerTotalSalesAsync(Guid customerId,CancellationToken ct)
+        public async Task<decimal?> GetCustomerTotalSalesAsync(Guid customerId,CancellationToken ct)
         {
             var customer= await _context.Customers.FirstOrDefaultAsync(x => x.Id == customerId,ct);
-            if(customer is null)
-                throw new ArgumentNullException($"there is no customer with the id {customerId}");
+            if (customer is null)
+                return null;
 
             var orders = await _context.Orders.FromSqlInterpolated($"select * from Orders where CustomerId={customerId} ").ToListAsync(ct);
             return orders.Sum(o => o.TotalAmount);
@@ -121,9 +122,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 throw new InvalidOperationException(
                     "Items can only be added to pending orders.");
 
-            if (request.Quantity<= 0)
-                throw new InvalidOperationException($"quantity must be more than zero");
-
             var product=await _context.Products.FirstOrDefaultAsync(p=>p.Id==request.ProductId,ct);
 
             if (product is null)
@@ -132,7 +130,11 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 throw new InvalidOperationException(
                     "Cannot add an inactive product to an order.");
             if (product.StockQuantity < request.Quantity)
+            {
+                _logger.LogWarning("There is no enough stock for product {product.Id}", product.Id);
+
                 throw new InvalidOperationException($"there's no enough quantity in the stock");
+            }
 
             product.StockQuantity-= request.Quantity;
             var orderItem = new OrderItem
@@ -157,10 +159,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 if (customer is null)
                     throw new KeyNotFoundException($"Customer with the id {request.CustomerId} was not found.");
 
-                
-                if (request.Items is null || request.Items.Count == 0)
-                    throw new InvalidOperationException("An order must contain at least one product.");
-
                 var order = new Order
                 {
                     Id = Guid.NewGuid(),
@@ -171,9 +169,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
                 foreach (var item in request.Items)
                 {
-                    if (item.Quantity <= 0)
-                        throw new InvalidOperationException("Product quantity must be greater than zero.");
-
                     var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == item.ProductId, ct);
 
                     if (product is null)
@@ -182,8 +177,12 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                     if (!product.IsActive)
                         throw new InvalidOperationException($"Product with the id {item.ProductId} is inactive.");
 
-                    if (item.Quantity > product.StockQuantity)
-                        throw new InvalidOperationException($"There is not enough stock for product {product.Id}.");
+                if (item.Quantity > product.StockQuantity)
+                {
+                    _logger.LogWarning("There is no enough stock for product {product.Id}", product.Id);
+                    throw new InvalidOperationException($"There is no enough stock for product {product.Id}.");
+                    
+                }
                     
                     product.StockQuantity -= item.Quantity;
                     var orderItem = new OrderItem
@@ -200,6 +199,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("order with the id: {OrderId} was created", order.Id);
                 await transaction.CommitAsync(ct);
                 return order.Id;
             

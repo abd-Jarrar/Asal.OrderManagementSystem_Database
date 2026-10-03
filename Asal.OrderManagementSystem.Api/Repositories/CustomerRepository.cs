@@ -9,17 +9,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
     {
         public async Task<Guid?> CreateCustomerAsync(string customerName, string customerEmail, string phone,CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(customerName))
-                throw new ArgumentNullException("customer name is empty");
-
-            if (string.IsNullOrWhiteSpace(customerEmail))
-                throw new ArgumentNullException("customer email is empty");
-
-            if (string.IsNullOrWhiteSpace(customerEmail))
-                throw new ArgumentNullException("customer phone is empty");
-            if(phone.Length>13)
-                throw new InvalidOperationException("customer phone can't excced 13 characters");
-
             if (await _context.Customers.AnyAsync(c => c.Email == customerEmail, ct))
                 return null;
             var customer = new Customer

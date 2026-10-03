@@ -1,6 +1,7 @@
 ﻿using Asal.OrderManagementSystem.Api.Data;
 using Asal.OrderManagementSystem.Api.Interfaces;
 using Asal.OrderManagementSystem.Api.Models;
+using Asal.OrderManagementSystem.Api.Responses;
 using Microsoft.EntityFrameworkCore;
 
 namespace Asal.OrderManagementSystem.Api.Repositories
@@ -9,19 +10,6 @@ namespace Asal.OrderManagementSystem.Api.Repositories
     {
         public async Task<Guid?> CreateProductAsync(string productName, string SKU, decimal productPrice, int? stockQuantity,CancellationToken ct)
         {
-            if(string.IsNullOrWhiteSpace(productName))
-                throw new ArgumentNullException("productName is null");
-
-            if (string.IsNullOrWhiteSpace(SKU))
-                throw new ArgumentNullException("productName is null");
-
-            if (productPrice <= 0)
-                throw new InvalidOperationException("productPrice is negative");
-            if(stockQuantity is not null)
-            {
-                if(stockQuantity<0)
-                    throw new InvalidOperationException("stockQuantity is negative");
-            }
             if (await _context.Products.AnyAsync(p => p.SKU == SKU,ct))
                 return null;
 
@@ -64,11 +52,78 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             return await _context.Products.ToListAsync(ct);
         }
 
+        public async Task<List<Product>> GetInStockProducts(CancellationToken ct)
+        {
+            return await _context.Products.Where(x => x.IsActive && x.StockQuantity > 0).ToListAsync(ct);
+        }
+
         public async Task<Product?> GetProductByIdAsync(Guid productId, CancellationToken ct)
         {
             var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId, ct);
             if (product is null)
                 return null;
+            return product;
+        }
+
+        public async Task<Product?> GetProductByNameAsync(string productName, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(productName))
+                return null;
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.Name.Equals(productName),ct);
+            return product;
+        }
+
+
+        public async Task<PagedResult<Product>> GetProductsAsync(int pageNumber ,int pageSize ,CancellationToken ct )
+        {
+            var totalCount = await _context.Products
+                .CountAsync(ct);
+
+            var products = await _context.Products
+                .OrderBy(p => p.Name)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return new PagedResult<Product>
+            {
+                Items = products,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+        }
+
+        public async Task<List<Product>> GetProductsSortedByCreatingDate(CancellationToken ct)
+        {
+            return await _context.Products.OrderBy(p=>p.CreatedAt).ToListAsync(ct);
+        }
+
+        public Task<List<Product>> GetProductsSortedByName(CancellationToken ct)
+        {
+            return _context.Products.OrderBy(p => p.Name).ToListAsync(ct);
+        }
+
+        public Task<List<Product>> GetProductsSortedByPriceAsc(CancellationToken ct)
+        {
+            return _context.Products.OrderBy(p => p.Price).ToListAsync(ct);
+        }
+
+        public Task<List<Product>> GetProductsSortedByPriceDesc(CancellationToken ct)
+        {
+            return _context.Products.OrderByDescending(p => p.Price).ToListAsync(ct);
+
+        }
+
+        public async Task<Product?> GetProductWithMaximumPriceAsync(CancellationToken ct)
+        {
+            var product = await _context.Products.OrderByDescending(p => p.Price).FirstOrDefaultAsync(ct);
+            return product;
+        }
+
+        public async Task<Product?> GetProductWithMinimumPriceAsync(CancellationToken ct)
+        {
+            var product = await _context.Products.OrderBy(p => p.Price).FirstOrDefaultAsync(ct);
             return product;
         }
 
@@ -79,5 +134,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 .ToListAsync(ct);
             return products;
         }
+
+        
     }
 }

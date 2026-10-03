@@ -46,22 +46,21 @@ namespace Asal.OrderManagementSystem.Api.Controllers
 
         [HttpGet]
         [Route("total-sales/{customerId:guid}")]
-        [HttpGet]
-        public async Task<IActionResult> GetCusomterSales(Guid customerId,CancellationToken ct)
+        public async Task<IActionResult> GetCusomterSales(Guid customerId, CancellationToken ct)
         {
-            try
-            {
-                var sales = await _orderRepository.GetCustomerTotalSalesAsync(customerId, ct);
-                return Ok(sales);
-            }
-            catch(Exception ex)
+
+            var sales = await _orderRepository.GetCustomerTotalSalesAsync(customerId, ct);
+            if (sales is null)
             {
                 return NotFound(new ProblemDetails
                 {
-                    Title="there is no customer",
-                    Detail=ex.Message
+                    Title = "there is no customer",
+                    Detail = $"there is no customer with the id {customerId}"
                 });
             }
+            return Ok(sales);
+
+
         }
 
 
@@ -84,45 +83,34 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddCustomer(CreateCustomerRequest request, CancellationToken ct)
+        public async Task<IActionResult> AddCustomer(CreateCustomerRequest request,CancellationToken ct)
         {
-            try
+            Guid? id = await _customerRepository.CreateCustomerAsync(
+                request.Name,
+                request.Email,
+                request.phone,
+                ct);
+
+            if (id is null)
             {
-                Guid? id= await _customerRepository.CreateCustomerAsync(request.Name,request.Email,request.phone,ct);
-                if (id is null)
-                    return Conflict(new ProblemDetails()
-                    {
-                        Title="duplicated email",
-                        Detail= "two customers can't have the same email"
-                    });
-
-                var customer = await _customerRepository.GetCustomerByIdAsync(id.Value,ct);
-
-                var response = CustomerResponse.FromModel(customer!);
-
-                return CreatedAtAction(
-                    nameof(GetCustomerById),
-                    new { customerId = customer?.Id },
-                    response);
-            }
-            catch (ArgumentNullException ex)
-            {
-                return BadRequest(new ProblemDetails()
+                return Conflict(new ProblemDetails
                 {
-                    Title = ex.Message,
+                    Title = "Duplicated email",
+                    Detail = "Two customers can't have the same email."
                 });
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = ex.Message,
-                });
 
-            }
+            var customer = await _customerRepository.GetCustomerByIdAsync(
+                id.Value,
+                ct);
 
+            var response = CustomerResponse.FromModel(customer!);
+
+            return CreatedAtAction(
+                nameof(GetCustomerById),
+                new { customerId = customer?.Id },
+                response);
         }
-
         [HttpGet]
         [Route("with-orders")]
         public async Task<IActionResult>GetCustomersWithOrders(CancellationToken ct)
