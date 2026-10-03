@@ -10,7 +10,6 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
         public Task<bool> CancelReservationAsync(Guid reservationId, CancellationToken ct);
 
         public Task<Reservation?> GetReservationByIdAsync(Guid reservationId, CancellationToken ct);
-        public Task ExpireReservationsAsync(CancellationToken ct);
     
     }
 }

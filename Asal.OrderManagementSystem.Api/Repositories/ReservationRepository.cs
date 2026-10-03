@@ -1,0 +1,100 @@
+﻿using Asal.OrderManagementSystem.Api.Data;
+using Asal.OrderManagementSystem.Api.Interfaces;
+using Asal.OrderManagementSystem.Api.Models;
+using Asal.OrderManagementSystem.Api.Requests.ReservationRequests;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace Asal.OrderManagementSystem.Api.Repositories
+{
+    public class ReservationRepository(AppDbContext _context,ILogger<ReservationRepository> _logger) : IReservationRepository
+    {
+        public async Task<bool> CancelReservationAsync(Guid reservationId, CancellationToken ct)
+        {
+            var reservation = await GetReservationByIdAsync(reservationId, ct);
+            if (reservation is null)
+                return false;
+            if (reservation.Status == ReservationStatus.Cancelled)
+                throw new InvalidOperationException("you can't cancel a cancelled reservation");
+            if (reservation.Status == ReservationStatus.Converted)
+                throw new InvalidOperationException("you can't cancel a converted reservation");
+            foreach (var reservationOrderItem in reservation.Items)
+            {
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == reservationOrderItem.ProductId, ct);
+                if (product is null )
+                    throw new InvalidOperationException("Failed to cancel the order because it contains unavailable products");
+                product.StockQuantity += reservationOrderItem.Quantity;
+            }
+            reservation.Status = ReservationStatus.Cancelled;
+            await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("the reservation with id: {reservationId} was cancelled", reservationId);
+            return true;
+
+        }
+
+        public async Task<Guid> CreateReservationAsync(CreateReservationRequest request, CancellationToken ct)
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == request.CustomerId, ct);
+
+            if (customer is null)
+                throw new KeyNotFoundException($"Customer with the id {request.CustomerId} was not found.");
+
+            var now = DateTime.UtcNow;
+            var reservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                CustomerId = request.CustomerId,
+                Status = ReservationStatus.Active,
+                CreatedAt= now,
+                ExpiresAt= now.AddMinutes(15),
+                Items = new List<ReservationItem>()
+            };
+
+            foreach (var item in request.Items)
+            {
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == item.ProductId, ct);
+
+                if (product is null)
+                    throw new KeyNotFoundException($"Product with the id {item.ProductId} was not found.");
+
+                if (!product.IsActive)
+                    throw new InvalidOperationException($"Product with the id {item.ProductId} is inactive.");
+
+                if (item.Quantity > product.StockQuantity)
+                {
+                    _logger.LogWarning("There is no enough stock for product {ProductId}", product.Id);
+                    throw new InvalidOperationException($"There is no enough stock for product {product.Id}.");
+
+                }
+
+                product.StockQuantity -= item.Quantity;
+                var reservationItem = new ReservationItem
+                {
+                    Id = Guid.NewGuid(),
+                    ReservationId = reservation.Id,
+                    ProductId = product.Id,
+                    Quantity = item.Quantity,
+                    UnitPrice = product.Price
+                };
+
+                reservation.Items.Add(reservationItem);
+            }
+
+            _context.Reservations.Add(reservation);
+            await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("reservation with the id: {ReservationId} was created", reservation.Id);
+            await transaction.CommitAsync(ct);
+            return reservation.Id;
+        }
+
+        
+
+        public async Task<Reservation?> GetReservationByIdAsync(Guid reservationId, CancellationToken ct)
+        {
+            return await _context.Reservations.Include(r =>r.Items).FirstOrDefaultAsync(r => r.Id == reservationId, ct);
+        }
+    }
+}
