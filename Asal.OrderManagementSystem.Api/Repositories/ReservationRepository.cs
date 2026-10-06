@@ -21,7 +21,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             var reservation = await GetReservationByIdAsync(reservationId, ct);
             if (reservation is null)
                 return false;
-            if (reservation.Status != ReservationStatus.Active|| reservation.IsExpired)
+            if (!IsReservationActive(reservation))
                 throw new InvalidOperationException("you can only cancel Active reservation");
             foreach (var reservationOrderItem in reservation.Items)
             {
@@ -37,7 +37,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
         }
 
-        public async Task<Guid> ConvertReservationToOrder(Guid reservationId,CancellationToken ct)
+        public async Task<Guid> ConvertReservationToOrderAsync(Guid reservationId,CancellationToken ct)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync(ct);
@@ -47,7 +47,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             if (reservation is null)
                 throw new KeyNotFoundException($"reservation with the id {reservationId} was not found.");
 
-            if (reservation.Status != ReservationStatus.Active || reservation.IsExpired)
+            if (!IsReservationActive(reservation))
                 throw new InvalidOperationException("You can only convert an active reservation.");
 
             var order = new Order
@@ -154,8 +154,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
         }
 
         
-
-        public async Task<List<Reservation>> GetAllReservations(CancellationToken ct)
+        public async Task<List<Reservation>> GetAllReservationsAsync(CancellationToken ct)
         {
             return await _context.Reservations.Include(r => r.Items).ToListAsync(ct);
         }
@@ -171,10 +170,10 @@ namespace Asal.OrderManagementSystem.Api.Repositories
         {
             return await _context.Reservations.Include(r => r.Items).Where(r=>r.Status==ReservationStatus.Expired).ToListAsync(ct);
         }
-        public async Task RemoveReservationsItemsAsync(List<Reservation> expiredReservatoins, CancellationToken ct)
+        public async Task RemoveItemsFromExpiredReservationsAsync(List<Reservation> expiredReservations, CancellationToken ct)
         {
 
-            foreach (var reservation in expiredReservatoins)
+            foreach (var reservation in expiredReservations)
             {
                 
                 foreach (var item in reservation.Items)
@@ -191,7 +190,11 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
             await _context.SaveChangesAsync(ct);
         }
-    
-    
+
+        private static bool IsReservationActive(Reservation reservation)
+        {
+            return !(reservation.Status != ReservationStatus.Active || reservation.IsExpired);
+        }
+
     }
 }

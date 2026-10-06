@@ -30,7 +30,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetReservations(CancellationToken ct)
         {
-            var reservations = await _reservationRepository.GetAllReservations(ct);
+            var reservations = await _reservationRepository.GetAllReservationsAsync(ct);
             if (reservations.Count() == 0)
                 return NotFound(new ProblemDetails
                 {
@@ -88,7 +88,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [Route("convert/{reservationId:guid}")]
         public async Task<IActionResult> ConvertReservationToOrder(Guid reservationId,CancellationToken ct)
         {
-            var orderId = await _reservationRepository.ConvertReservationToOrder(reservationId, ct);
+            var orderId = await _reservationRepository.ConvertReservationToOrderAsync(reservationId, ct);
 
             return Created(
                 $"/api/orders/{orderId}",

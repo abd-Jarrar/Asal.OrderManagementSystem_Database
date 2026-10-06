@@ -31,7 +31,7 @@ namespace Asal.OrderManagementSystem.Api.BackgroundJobs
                     if (expiredReservations.Count > 0)
                     {
                         await reservationRepository
-                            .RemoveReservationsItemsAsync(
+                            .RemoveItemsFromExpiredReservationsAsync(
                                 expiredReservations,
                                 stoppingToken);
 
