@@ -5,7 +5,6 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 {
     public interface IReservationRepository
     {
-        public Task<Guid> CreateReservationAsync(CreateReservationRequest request, CancellationToken ct);
 
         public Task<bool> CancelReservationAsync(Guid reservationId, CancellationToken ct);
 

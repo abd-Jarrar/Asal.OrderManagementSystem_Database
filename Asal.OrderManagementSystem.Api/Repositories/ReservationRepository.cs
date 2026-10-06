@@ -12,9 +12,8 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace Asal.OrderManagementSystem.Api.Repositories
 {
-    public class ReservationRepository(AppDbContext _context,ILogger<ReservationRepository> _logger ) : IReservationRepository
+    public class ReservationRepository(IProductRepository _productRepository,AppDbContext _context,ILogger<ReservationRepository> _logger ) : IReservationRepository
     {
-        private const int ReservationExpirationMinutes = 15;
 
         public async Task<bool> CancelReservationAsync(Guid reservationId, CancellationToken ct)
         {
@@ -25,7 +24,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 throw new InvalidOperationException("you can only cancel Active reservation");
             foreach (var reservationOrderItem in reservation.Items)
             {
-                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == reservationOrderItem.ProductId, ct);
+                var product = await _productRepository.GetProductByIdAsync(reservationOrderItem.ProductId, ct);
                 if (product is null )
                     throw new InvalidOperationException("Failed to cancel the order because it contains unavailable products");
                 product.StockQuantity += reservationOrderItem.Quantity;
@@ -60,10 +59,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
             foreach (var reservationItem in reservation.Items)
             {
-                var product = await _context.Products
-                    .FirstOrDefaultAsync(
-                        p => p.Id == reservationItem.ProductId,
-                        ct);
+                var product = await _productRepository.GetProductByIdAsync(reservationItem.ProductId, ct);
 
                 if (product is null || !product.IsActive)
                 {
@@ -91,63 +87,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
 
             return order.Id;
         }
-        public async Task<Guid> CreateReservationAsync(CreateReservationRequest request, CancellationToken ct)
-        {
-            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == request.CustomerId, ct);
-
-            if (customer is null)
-                throw new KeyNotFoundException($"Customer with the id {request.CustomerId} was not found.");
-
-            var now = DateTime.UtcNow;
-            var reservation = new Reservation
-            {
-                Id = Guid.NewGuid(),
-                CustomerId = request.CustomerId,
-                Status = ReservationStatus.Active,
-                CreatedAt= now,
-                ExpiresAt= now.AddMinutes(ReservationExpirationMinutes),
-                Items = new List<ReservationItem>()
-            };
-
-            foreach (var item in request.Items)
-            {
-                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == item.ProductId, ct);
-
-                if (product is null)
-                    throw new KeyNotFoundException($"Product with the id {item.ProductId} was not found.");
-
-                if (!product.IsActive)
-                    throw new InvalidOperationException($"Product with the id {item.ProductId} is inactive.");
-
-                if (item.Quantity > product.StockQuantity)
-                {
-                    _logger.LogWarning("There is no enough stock for product {ProductId}", product.Id);
-                    throw new InvalidOperationException($"There is no enough stock for product {product.Id}.");
-
-                }
-
-                product.StockQuantity -= item.Quantity;
-                var reservationItem = new ReservationItem
-                {
-                    Id = Guid.NewGuid(),
-                    ReservationId = reservation.Id,
-                    ProductId = product.Id,
-                    Quantity = item.Quantity,
-                    UnitPrice = product.Price
-                };
-
-                reservation.Items.Add(reservationItem);
-            }
-
-            _context.Reservations.Add(reservation);
-            await _context.SaveChangesAsync(ct);
-            _logger.LogInformation("reservation with the id: {ReservationId} was created", reservation.Id);
-            await transaction.CommitAsync(ct);
-            return reservation.Id;
-        }
-
+        
         public async Task<Reservation?> GetReservationByIdAsync(Guid reservationId, CancellationToken ct)
         {
             return await _context.Reservations.Include(r =>r.Items).FirstOrDefaultAsync(r => r.Id == reservationId, ct);
@@ -178,8 +118,7 @@ namespace Asal.OrderManagementSystem.Api.Repositories
                 
                 foreach (var item in reservation.Items)
                 {
-                    var product = await _context.Products
-                        .FirstAsync(p => p.Id == item.ProductId, ct);
+                    var product = await _productRepository.GetProductByIdAsync(item.ProductId, ct);
 
                     product.StockQuantity += item.Quantity;
                 }
