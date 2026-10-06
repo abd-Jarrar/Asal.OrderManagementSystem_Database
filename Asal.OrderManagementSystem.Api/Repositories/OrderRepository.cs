@@ -34,6 +34,11 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             return true;
         }
 
+        public async Task AddOrderAsync(Order order, CancellationToken ct)
+        {
+            await _context.Orders.AddAsync(order, ct);
+        }
+
         public async Task<bool> RemoveItemAsync(Guid orderId,Guid productId, CancellationToken ct)
         {
             var order = await GetOrderByIdAsync(orderId, ct);
