@@ -1,6 +1,25 @@
-var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
+using Asal.OrderManagementSystem.Api.Data;
+using Asal.OrderManagementSystem.Api.Interfaces;
+using Asal.OrderManagementSystem.Api.Repositories;
+using Microsoft.EntityFrameworkCore;
 
-app.MapGet("/", () => "Hello World!");
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<IProductRepository,ProductRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
+var app = builder.Build();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+app.MapControllers();
 
 app.Run();

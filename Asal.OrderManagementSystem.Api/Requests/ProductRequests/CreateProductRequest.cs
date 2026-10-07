@@ -5,7 +5,7 @@
 
         public string Name { get; set; } = null!;
 
-        public string? SKU { get; set; }
+        public string SKU { get; set; } = null!;
 
         public decimal Price { get; set; }
 

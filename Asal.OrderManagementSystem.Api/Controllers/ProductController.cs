@@ -7,22 +7,21 @@ namespace Asal.OrderManagementSystem.Api.Controllers
 {
     [ApiController]
     [Route("api/products")]
-    public class ProductController : ControllerBase
+    public class ProductController(IProductRepository _productRepository,IOrderRepository _orderRepository) : ControllerBase
     {
 
-        private readonly IProductRepository _productRepository;
-
-        public ProductController(IProductRepository productRepository)
-        {
-            _productRepository = productRepository;
-        }
+        
         [HttpGet]
         [Route("{productId:guid}")]
-        public IActionResult GetProductById(Guid productId)
+        public async Task<IActionResult> GetProductById(Guid productId, CancellationToken ct)
         {
-            var product = _productRepository.GetProductById(productId);
+            var product =await _productRepository.GetProductByIdAsync(productId,ct);
             if (product is null)
-                return NotFound();
+                return NotFound(new ProblemDetails
+                {
+                    Title="product was not found",
+                    Detail=$"product with the id {productId} was not found"
+                });
             else
             {
                 return Ok(ProductResponse.FromModel(product));
@@ -31,11 +30,33 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAllProducts()
+        public async Task<IActionResult> GetAllProducts(CancellationToken ct)
         {
-            var products = _productRepository.GetAllProducts();
-            if (products is null)
-                return NotFound("there are no products right now ");
+            var products = await _productRepository.GetAllProductsAsync(ct);
+            if (products.Count==0)
+                return NotFound(new ProblemDetails
+                {
+                    Title="there is no products",
+                    Detail= "there are no products right now "
+                });
+            else
+            {
+                return Ok(ProductResponse.FromModels(products));
+            }
+        }
+
+
+        [HttpGet]
+        [Route("active-products")]
+        public async Task<IActionResult> GetAllActiveProducts(CancellationToken ct)
+        {
+            var products = await _productRepository.GetActiveProducts(ct);
+            if (products.Count == 0)
+                return NotFound(new ProblemDetails
+                {
+                    Title = "there is no products",
+                    Detail = "there is no active products right now "
+                });
             else
             {
                 return Ok(ProductResponse.FromModels(products));
@@ -44,30 +65,38 @@ namespace Asal.OrderManagementSystem.Api.Controllers
 
         [HttpDelete]
         [Route("{productId:guid}")]
-        public IActionResult DeleteProduct(Guid productId)
+        public async Task<IActionResult> DeleteProduct(Guid productId, CancellationToken ct)
         {
-            var isDeleted = _productRepository.DeleteProductById(productId);
+            var isDeleted = await _productRepository.DeleteProductByIdAsync(productId,ct);
 
             if (isDeleted)
                 return NoContent();
             else
             {
-                return NotFound($"Product with the id: {productId} was not found");
+                return NotFound(new ProblemDetails
+                {
+                    Title="prouct was not found",
+                    Detail= $"Product with the id: {productId} was not found"
+                });
             }
         }
 
         [HttpPost]
-        public IActionResult AddProduct(CreateProductRequest request)
+        public async Task<IActionResult> AddProduct(CreateProductRequest request,CancellationToken ct)
         {
             try
             {
-                Guid? id = _productRepository.CreateProduct(request.Name
-                    , request.SKU, request.Price, request.stockQuantity);
+                Guid? id = await _productRepository.CreateProductAsync(request.Name
+                    , request.SKU, request.Price, request.stockQuantity,ct);
 
                 if (id is null)
-                    return BadRequest();
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title="duplicated sku",
+                        Detail="two products can't have the same sku"
+                    });
 
-                var product = _productRepository.GetProductById(id.Value);
+                var product = await _productRepository.GetProductByIdAsync(id.Value,ct);
 
                 var response = ProductResponse.FromModel(product!);
 
@@ -78,37 +107,54 @@ namespace Asal.OrderManagementSystem.Api.Controllers
             }
             catch (ArgumentNullException ex)
             {
-                return BadRequest(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-
-            }
-
-        }
-
-        [HttpPut]
-        [Route("{productId:guid}")]
-        public IActionResult UpdateProduct(Guid productId, UpdateProductRequest request)
-        {
-            try
-            {
-                var updateCustomer = _productRepository.UpdateProduct(productId, request.Name, request.SKU
-                    , request.Price, request.stockQuantity, request.IsActive);
-                if (updateCustomer)
-                    return NoContent();
-                else
+                return BadRequest(new ProblemDetails
                 {
-                    return NotFound();
-                }
+                    Title = ex.Message,
+                });
             }
             catch (Exception ex)
             {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = ex.Message,
+                });
 
-                return BadRequest(ex.Message);
             }
+
         }
 
+        [HttpGet]
+        [Route("stock-belowOrEqual-5")]
+        public async Task<IActionResult> GetProductsWithStockBelow5(CancellationToken ct)
+        {
+            var products = await _productRepository.GetProductWithStockAsync(5, ct);
+            if (products.Count == 0)
+                return NotFound(new ProblemDetails
+                {
+                    Title = "there is no products",
+                    Detail = "there is no products with stock less than 5"
+                });
+            else
+                return Ok(products);
+        }
+
+
+
+        [HttpGet]
+        [Route("top-5-selling")]
+
+        public async Task<IActionResult> GetTop5SellingProducts(CancellationToken ct)
+        {
+
+            var products = await _orderRepository.GetTop5SellingProductsAsync(ct);
+
+            if (products.Count == 0)
+                return NotFound(new ProblemDetails
+                {
+                    Title = "there is no products",
+                    Detail = "there is no products right now "
+                });
+            return Ok(products);
+        }
     }
 }
