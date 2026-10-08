@@ -9,6 +9,8 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
     {
         public Task<List<Product>> GetTop5SellingProductsAsync(CancellationToken ct);
 
+        public Task AddOrderAsync(Order order, CancellationToken ct);
+        
         public Task<bool> RemoveItemAsync(Guid orderId, Guid productId,CancellationToken ct);
         public Task<List<Order>> GetOrdersCreatedInTheLast30DaysAsync(CancellationToken ct);
 

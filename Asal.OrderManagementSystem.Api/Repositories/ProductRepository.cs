@@ -135,6 +135,9 @@ namespace Asal.OrderManagementSystem.Api.Repositories
             return products;
         }
 
-        
+        public void IncreaseStock(Product product, int quantity)
+        {
+            product?.StockQuantity = quantity;
+        }
     }
 }

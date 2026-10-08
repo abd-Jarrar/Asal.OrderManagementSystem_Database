@@ -9,6 +9,7 @@ namespace Asal.OrderManagementSystem.Api.Interfaces
 
         public Task<Product?> GetProductWithMaximumPriceAsync(CancellationToken ct);
 
+        public void IncreaseStock(Product product, int quantity);
         public Task<Product?> GetProductWithMinimumPriceAsync(CancellationToken ct);
 
         public Task<Product?> GetProductByNameAsync(string productName,CancellationToken ct);

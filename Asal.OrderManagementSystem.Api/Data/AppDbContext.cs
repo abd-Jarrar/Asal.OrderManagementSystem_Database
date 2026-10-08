@@ -10,6 +10,10 @@ namespace Asal.OrderManagementSystem.Api.Data
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem>Items { get; set; }
+
+        public DbSet<Reservation> Reservations { get; set; }
+
+        public DbSet<ReservationItem> ReservationItems { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(CustomerConfiguration).Assembly);
