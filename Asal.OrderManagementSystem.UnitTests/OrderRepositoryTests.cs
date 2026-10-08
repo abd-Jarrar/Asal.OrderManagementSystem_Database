@@ -1,5 +1,4 @@
 ﻿using Asal.OrderManagementSystem.Api.Data;
-using Asal.OrderManagementSystem.Api.Interfaces;
 using Asal.OrderManagementSystem.Api.Models;
 using Asal.OrderManagementSystem.Api.Repositories;
 using Asal.OrderManagementSystem.Api.Requests.OrderItemRequests;
@@ -7,8 +6,6 @@ using Asal.OrderManagementSystem.Api.Requests.OrderRequests;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Net;
-
 namespace Asal.OrderManagementSystem.UnitTests;
 
 public class OrderRepositoryTests : IDisposable
@@ -16,19 +13,19 @@ public class OrderRepositoryTests : IDisposable
     private readonly OrderRepository _orderRepository;
     private readonly AppDbContext _context;
 
-    Guid activeCustomerId =Guid.Parse("00000000-0000-0000-0000-000000000000");
+    private static readonly Guid ActiveCustomerId = Guid.Parse("00000000-0000-0000-0000-000000000000");
 
-    Guid ValidProductId =Guid.Parse("00000000-0000-0000-0000-000000000000");
-    Guid ValidProductId2 = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    private static readonly Guid ValidProductId = Guid.Parse("00000000-0000-0000-0000-000000000000");
+    private static readonly Guid ValidProductId2 = Guid.Parse("55555555-5555-5555-5555-555555555555");
 
 
-    Guid validOrderId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static readonly Guid ValidOrderId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
-    
-    Guid CanclledOrderId = Guid.Parse("02c47f99-0777-4acd-a784-17013de6804c");
-    Guid CompletedOrderId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
-    Guid InActiveProductId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    CancellationToken ct = CancellationToken.None;
+
+    private static readonly Guid CancelledOrderId = Guid.Parse("02c47f99-0777-4acd-a784-17013de6804c");
+    private static readonly Guid CompletedOrderId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+    private static readonly Guid InActiveProductId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    private static readonly CancellationToken CT = CancellationToken.None;
     public OrderRepositoryTests()
     {
         var configuration = new ConfigurationBuilder().AddUserSecrets<Program>().Build();
@@ -40,7 +37,7 @@ public class OrderRepositoryTests : IDisposable
 
         _context = new AppDbContext(options);
 
-        _orderRepository = new OrderRepository(_context,NullLogger<OrderRepository>.Instance);
+        _orderRepository = new OrderRepository(_context, NullLogger<OrderRepository>.Instance);
     }
 
 
@@ -49,27 +46,14 @@ public class OrderRepositoryTests : IDisposable
     {
         // Arrange
 
-        var createOrderRequest = new CreateOrderRequest
-        {
-            CustomerId = activeCustomerId,
-            Items = new List<CreateOrderItemRequest>
-        {
-            new CreateOrderItemRequest
-            {
-                ProductId = ValidProductId,
-                Quantity = 1
-            }
-        }
-        };
+        var request = CreateOrderRequestWithOneProduct(ActiveCustomerId, ValidProductId, 1);
 
         // Act
-        Guid orderId = await _orderRepository.CreateOrderAsync(createOrderRequest,ct);
-        await _orderRepository.CancelOrderAsync(orderId, ct);
+        Guid orderId = await _orderRepository.CreateOrderAsync(request, CT);
+        await _orderRepository.CancelOrderAsync(orderId, CT);
 
         // Assert
-        var order = await _context.Orders
-            .Include(o => o.OrderItems)
-            .FirstOrDefaultAsync(o => o.Id == orderId, ct);
+        var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId, CT);
 
         Assert.Equal(OrderStatus.Cancelled, order?.Status);
     }
@@ -78,43 +62,31 @@ public class OrderRepositoryTests : IDisposable
     public async Task CheckStockRestorationCancelOrderAsync_WithValidOrder_ReturnTrue()
     {
         // Arrange
-        var quantityBefore = (await _context.Products.FirstOrDefaultAsync(p => p.Id == ValidProductId, ct))?.StockQuantity;
-        var createOrderRequest = new CreateOrderRequest
-        {
-            CustomerId = activeCustomerId,
-            Items = new List<CreateOrderItemRequest>
-        {
-            new CreateOrderItemRequest
-            {
-                ProductId = ValidProductId,
-                Quantity = 1
-            }
-        }
-        };
+        var quantityBefore = (await _context.Products.FirstOrDefaultAsync(p => p.Id == ValidProductId, CT))?.StockQuantity;
+
+
+        var request = CreateOrderRequestWithOneProduct(ActiveCustomerId, ValidProductId, 1);
 
         // Act
-        Guid orderId = await _orderRepository.CreateOrderAsync(createOrderRequest, ct);
-        await _orderRepository.CancelOrderAsync(orderId, ct);
+        Guid orderId = await _orderRepository.CreateOrderAsync(request, CT);
+        await _orderRepository.CancelOrderAsync(orderId, CT);
 
         // Assert
-        var quantityAfter = (await _context.Products.FirstOrDefaultAsync(p => p.Id == ValidProductId, ct))?.StockQuantity;
+        var quantityAfter = (await _context.Products.FirstOrDefaultAsync(p => p.Id == ValidProductId, CT))?.StockQuantity;
         Assert.Equal(quantityAfter, quantityBefore);
 
     }
 
 
-   
+
     [Fact]
     public async Task CancelOrderAsync_WithCompletedOrder_ThrowsInvalidOperationException()
     {
-        // Arrange
-
-        var order = await _orderRepository.GetOrderByIdAsync(CompletedOrderId, ct);
 
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-             () => _orderRepository.CancelOrderAsync(CompletedOrderId, ct));
+             () => _orderRepository.CancelOrderAsync(CompletedOrderId, CT));
 
         Assert.Contains("completed", exception.Message);
 
@@ -125,22 +97,12 @@ public class OrderRepositoryTests : IDisposable
     {
         // Arrange
         var newId = Guid.NewGuid();
-        var createOrderRequest = new CreateOrderRequest
-        {
-            CustomerId = newId,
-            Items = new List<CreateOrderItemRequest>
-        {
-            new CreateOrderItemRequest
-            {
-                ProductId = ValidProductId,
-                Quantity = 1
-            }
-        }
-        };
 
+        var request = CreateOrderRequestWithOneProduct(newId, ValidProductId, 1);
+        
         // Act & Assert
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _orderRepository.CreateOrderAsync(createOrderRequest, ct));
+            () => _orderRepository.CreateOrderAsync(request, CT));
 
         Assert.Contains("Customer", exception.Message);
         Assert.Contains(newId.ToString(), exception.Message);
@@ -153,22 +115,12 @@ public class OrderRepositoryTests : IDisposable
     {
         // Arrange
         var productId = Guid.NewGuid();
-        var createOrderRequest = new CreateOrderRequest
-        {
-            CustomerId = activeCustomerId,
-            Items = new List<CreateOrderItemRequest>
-        {
-            new CreateOrderItemRequest
-            {
-                ProductId = productId,
-                Quantity = 1
-            }
-        }
-        };
+
+        var request = CreateOrderRequestWithOneProduct(ActiveCustomerId,productId,1);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _orderRepository.CreateOrderAsync(createOrderRequest, ct));
+            () => _orderRepository.CreateOrderAsync(request, CT));
 
         Assert.Contains("Product", exception.Message);
         Assert.Contains(productId.ToString(), exception.Message);
@@ -180,22 +132,12 @@ public class OrderRepositoryTests : IDisposable
     {
         // Arrange
 
-        var createOrderRequest = new CreateOrderRequest
-        {
-            CustomerId = activeCustomerId,
-            Items = new List<CreateOrderItemRequest>
-        {
-            new CreateOrderItemRequest
-            {
-                ProductId = ValidProductId,
-                Quantity = int.MaxValue
-            }
-        }
-        };
+
+        var request = CreateOrderRequestWithOneProduct(ActiveCustomerId, ValidProductId, int.MaxValue);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _orderRepository.CreateOrderAsync(createOrderRequest, ct));
+            () => _orderRepository.CreateOrderAsync(request, CT));
 
         Assert.Contains("stock", exception.Message);
     }
@@ -206,37 +148,21 @@ public class OrderRepositoryTests : IDisposable
     {
         // Arrange
 
-        var createOrderRequest = new CreateOrderRequest
-        {
-            CustomerId = activeCustomerId,
-            Items = new List<CreateOrderItemRequest>
-        {
-            new CreateOrderItemRequest
-            {
-                ProductId = InActiveProductId,
-                Quantity = int.MaxValue
-            }
-        }
-        };
+        var request = CreateOrderRequestWithOneProduct(ActiveCustomerId, InActiveProductId, 1);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _orderRepository.CreateOrderAsync(createOrderRequest, ct));
+            () => _orderRepository.CreateOrderAsync(request, CT));
 
         Assert.Contains("inactive", exception.Message);
     }
 
 
     [Fact]
-    public async Task CreateOrder_With2ValidProducts_CreatesOrder()
+    public async Task CreateOrderAsync_WithTwoValidProduct_CreatesOrder()
     {
         // Arrange
-
-        var createOrderRequest = new CreateOrderRequest
-        {
-            CustomerId = activeCustomerId,
-            Items = new List<CreateOrderItemRequest>
-        {
+        var request = CreateOrderRequestWithMultipleProducts(ActiveCustomerId, [
             new CreateOrderItemRequest
             {
                 ProductId = ValidProductId,
@@ -247,26 +173,27 @@ public class OrderRepositoryTests : IDisposable
                 ProductId = ValidProductId2,
                 Quantity = 1
             }
-        }
-        };
+        ]);
+
+
 
         // Act
-        Guid orderId = await _orderRepository.CreateOrderAsync(createOrderRequest, ct);
+        Guid orderId = await _orderRepository.CreateOrderAsync(request, CT);
 
         try
         {
             // Assert
-            var order = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.Id == orderId, ct);
+            var order = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.Id == orderId, CT);
 
             Assert.NotNull(order);
-            Assert.Equal(activeCustomerId, order.CustomerId);
+            Assert.Equal(ActiveCustomerId, order.CustomerId);
             Assert.Equal(OrderStatus.Pending, order.Status);
 
             Assert.Equal(2, order.OrderItems.Count());
         }
         finally
         {
-            await _orderRepository.CancelOrderAsync(orderId, ct);
+            await _orderRepository.CancelOrderAsync(orderId, CT);
         }
     }
 
@@ -276,29 +203,20 @@ public class OrderRepositoryTests : IDisposable
     {
         // Arrange
 
-        var createOrderRequest = new CreateOrderRequest
-        {
-            CustomerId = activeCustomerId,
-            Items = new List<CreateOrderItemRequest>
-        {
-            new CreateOrderItemRequest
-            {
-                ProductId = ValidProductId,
-                Quantity = 1
-            }
-        }
-        };
+        var request = CreateOrderRequestWithOneProduct(ActiveCustomerId, ValidProductId, 1);
+
+
 
         // Act
-        Guid orderId = await _orderRepository.CreateOrderAsync(createOrderRequest, ct);
+        Guid orderId = await _orderRepository.CreateOrderAsync(request, CT);
 
         try
         {
             // Assert
-            var order = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.Id == orderId, ct);
+            var order = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.Id == orderId, CT);
 
             Assert.NotNull(order);
-            Assert.Equal(activeCustomerId, order.CustomerId);
+            Assert.Equal(ActiveCustomerId, order.CustomerId);
             Assert.Equal(OrderStatus.Pending, order.Status);
 
 
@@ -309,7 +227,7 @@ public class OrderRepositoryTests : IDisposable
         }
         finally
         {
-            await _orderRepository.CancelOrderAsync(orderId, ct);
+            await _orderRepository.CancelOrderAsync(orderId, CT);
         }
     }
 
@@ -320,7 +238,7 @@ public class OrderRepositoryTests : IDisposable
         var orderId = Guid.NewGuid();
         //Act & Assert
         var excepion = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-        _orderRepository.RemoveItemAsync(orderId, ValidProductId, ct));
+        _orderRepository.RemoveItemAsync(orderId, ValidProductId, CT));
 
         Assert.Contains("not found", excepion.Message);
 
@@ -331,22 +249,19 @@ public class OrderRepositoryTests : IDisposable
     {
         //Act & Assert
         var excepion = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-        _orderRepository.RemoveItemAsync(validOrderId, ValidProductId, ct));
+        _orderRepository.RemoveItemAsync(ValidOrderId, ValidProductId, CT));
 
-        Assert.Contains("not found",excepion.Message);
+        Assert.Contains("not found", excepion.Message);
     }
 
     [Fact]
     public async Task CancelOrderAsync_WithCancelledOrder_ThrowsInvalidOperationException()
     {
-        // Arrange
-
-        var order = await _orderRepository.GetOrderByIdAsync(CanclledOrderId, ct);
 
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-             () => _orderRepository.CancelOrderAsync(CanclledOrderId, ct));
+             () => _orderRepository.CancelOrderAsync(CancelledOrderId, CT));
 
         Assert.Contains("cancelled", exception.Message);
 
@@ -355,5 +270,28 @@ public class OrderRepositoryTests : IDisposable
     public void Dispose()
     {
         _context.Dispose();
+    }
+    private static CreateOrderRequest CreateOrderRequestWithMultipleProducts(Guid customerId, CreateOrderItemRequest[] items)
+    {
+        return new CreateOrderRequest
+        {
+            CustomerId = customerId,
+            Items = items.ToList()
+        };
+    }
+
+    private static CreateOrderRequest CreateOrderRequestWithOneProduct(Guid customerId, Guid productId,int quantity)
+    {
+        return new CreateOrderRequest
+        {
+            CustomerId = customerId,
+            Items = [
+                new CreateOrderItemRequest
+                {
+                    ProductId = productId,
+                    Quantity = quantity
+                }
+            ]
+        };
     }
 }
