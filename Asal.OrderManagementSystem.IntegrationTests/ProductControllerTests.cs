@@ -16,6 +16,7 @@ public class ProductControllerTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task CreateProduct_WithValidDetails_ReturnsCreated()
     {
+        //arrange
         var request = new CreateProductRequest
         {
             Name = "testProduct1",
@@ -23,8 +24,9 @@ public class ProductControllerTests : IClassFixture<CustomWebApplicationFactory>
             Price = 2.00m,
             stockQuantity = 10
         };
+        //act
         var response = await _httpClient.PostAsJsonAsync("api/products", request);
-
+        //assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
@@ -49,23 +51,32 @@ public class ProductControllerTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task GetProductById_UnknownProduct_ReturnsNotFound()
     {
+        //arrange
         var unknownProductId = Guid.NewGuid();
+        //act
         var response = await _httpClient.GetAsync($"api/products/{unknownProductId}");
+        //assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task DeleteProduct_UnknownProduct_ReturnsNotFound()
     {
+        //arrange
         var unknownProductId = Guid.NewGuid();
+        //act
         var response = await _httpClient.DeleteAsync($"api/products/{unknownProductId}");
+        //assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
     [Fact]
     public async Task DeleteProduct_ProductInOrder_ReturnsInternalServerError()
     {
+        //arrange
         var productId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        //act
         var response = await _httpClient.DeleteAsync($"api/products/{productId}");
+        //assert
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 }
