@@ -193,6 +193,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
                 new { productId = product?.Id },
                 response);
         }
+
         [HttpGet]
         [Route("stock-belowOrEqual-5")]
         public async Task<IActionResult> GetProductsWithStockBelow5(CancellationToken ct)
