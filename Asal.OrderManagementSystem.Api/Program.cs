@@ -3,6 +3,7 @@ using Asal.OrderManagementSystem.Api.Data;
 using Asal.OrderManagementSystem.Api.Exceptions;
 using Asal.OrderManagementSystem.Api.Interfaces;
 using Asal.OrderManagementSystem.Api.Repositories;
+using Asal.OrderManagementSystem.Api.Services;
 using Asal.OrderManagementSystem.Api.Validators;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -15,6 +16,8 @@ builder.Services.AddScoped<IProductRepository,ProductRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+builder.Services.AddScoped<ReservationService>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));

@@ -5,20 +5,21 @@ using Asal.OrderManagementSystem.Api.Requests.OrderRequests;
 using Asal.OrderManagementSystem.Api.Requests.ReservationItemRequests;
 using Asal.OrderManagementSystem.Api.Requests.ReservationRequests;
 using Asal.OrderManagementSystem.Api.Responses;
+using Asal.OrderManagementSystem.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Asal.OrderManagementSystem.Api.Controllers
 {
     [ApiController]
     [Route("api/reservations")]
-    public class ReservationController(IReservationRepository _reservationRepository):ControllerBase
+    public class ReservationController(ReservationService _reservationService):ControllerBase
     {
 
         [HttpGet]
         [Route("{reservationId:guid}")]
         public async Task<IActionResult> GetReservationById(Guid reservationId, CancellationToken ct)
         {
-            var reservation = await _reservationRepository.GetReservationByIdAsync(reservationId, ct);
+            var reservation = await _reservationService.GetReservationByIdAsync(reservationId, ct);
             if (reservation is null)
                 return NotFound(new ProblemDetails
                 {
@@ -30,7 +31,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetReservations(CancellationToken ct)
         {
-            var reservations = await _reservationRepository.GetAllReservationsAsync(ct);
+            var reservations = await _reservationService.GetAllReservationsAsync(ct);
             if (reservations.Count() == 0)
                 return NotFound(new ProblemDetails
                 {
@@ -44,7 +45,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [Route("expired-reservations")]
         public async Task<IActionResult> GetExpiredReservations(CancellationToken ct)
         {
-            var reservations = await _reservationRepository.GetExpiredReservationsAsync(ct);
+            var reservations = await _reservationService.GetExpiredReservationsAsync(ct);
             if (reservations.Count() == 0)
                 return NotFound(new ProblemDetails
                 {
@@ -58,7 +59,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateReservation(CreateReservationRequest request, CancellationToken ct)
         {
-            var reservationId = await _reservationRepository.CreateReservationAsync(request, ct);
+            var reservationId = await _reservationService.CreateReservationAsync(request, ct);
 
             return Created(
                 $"/api/reservations/{reservationId}",
@@ -69,18 +70,8 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [Route("cancel/{reservationId:guid}")]
         public async Task<IActionResult> CancelReservation(Guid reservationId, CancellationToken ct)
         {
-            bool isDeleted = await _reservationRepository.CancelReservationAsync(reservationId, ct);
-            if (isDeleted)
-                return NoContent();
-            else
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Title = "cancelling failed",
-                    Detail = "reservation with the id {reservationId} was not found"
-                });
-            }
-
+            await _reservationService.CancelReservationAsync(reservationId, ct);
+            return NoContent();
         }
 
 
@@ -88,7 +79,7 @@ namespace Asal.OrderManagementSystem.Api.Controllers
         [Route("convert/{reservationId:guid}")]
         public async Task<IActionResult> ConvertReservationToOrder(Guid reservationId,CancellationToken ct)
         {
-            var orderId = await _reservationRepository.ConvertReservationToOrderAsync(reservationId, ct);
+            var orderId = await _reservationService.ConvertReservationToOrderAsync(reservationId, ct);
 
             return Created(
                 $"/api/orders/{orderId}",

@@ -2,6 +2,7 @@
 using Asal.OrderManagementSystem.Api.Models;
 using Asal.OrderManagementSystem.Api.Requests.ReservationItemRequests;
 using Asal.OrderManagementSystem.Api.Requests.ReservationRequests;
+using Microsoft.EntityFrameworkCore;
 namespace Asal.OrderManagementSystem.Api.Services
 {
     public class ReservationService(
@@ -28,6 +29,21 @@ namespace Asal.OrderManagementSystem.Api.Services
                 Items = new List<ReservationItem>()
             };
         }
+
+        public async Task<Reservation?> GetReservationByIdAsync(Guid reservationId, CancellationToken ct)
+        {
+            return await _reservationRepository.GetReservationByIdAsync(reservationId, ct);
+        }
+
+        public async Task<List<Reservation>> GetAllReservationsAsync(CancellationToken ct)
+        {
+            return await _reservationRepository.GetAllReservationsAsync(ct);
+        }
+        public async Task<List<Reservation>> GetExpiredReservationsAsync(CancellationToken ct)
+        {
+            return await _reservationRepository.GetExpiredReservationsAsync(ct);
+        }
+
         public async Task<Guid> CreateReservationAsync(CreateReservationRequest request,CancellationToken ct)
         {
             await _unitOfWork.BeginTransactionAsync(ct);
