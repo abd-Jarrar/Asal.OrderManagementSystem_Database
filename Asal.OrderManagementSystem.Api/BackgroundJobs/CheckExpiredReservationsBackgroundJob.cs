@@ -1,4 +1,5 @@
 ﻿using Asal.OrderManagementSystem.Api.Interfaces;
+using Asal.OrderManagementSystem.Api.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Asal.OrderManagementSystem.Api.BackgroundJobs
@@ -24,13 +25,17 @@ namespace Asal.OrderManagementSystem.Api.BackgroundJobs
                         scope.ServiceProvider
                             .GetRequiredService<IReservationRepository>();
 
+                    var reservationService =
+                        scope.ServiceProvider
+                            .GetRequiredService<ReservationService>();
+
                     var expiredReservations =
                         await reservationRepository
                             .GetReservationsPendingExpirationAsync(stoppingToken);
 
                     if (expiredReservations.Count > 0)
                     {
-                        await reservationRepository
+                        await reservationService
                             .RemoveItemsFromExpiredReservationsAsync(
                                 expiredReservations,
                                 stoppingToken);
